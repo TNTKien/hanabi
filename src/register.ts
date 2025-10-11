@@ -54,13 +54,13 @@ const commands = [
   new Command("help", "Hướng dẫn sử dụng bot").options(
     new Option("command", "Chọn lệnh để xem hướng dẫn")
       .choices(
-        { name: "💰 /xu - Check balance", value: "xu" },
-        { name: "🍀 /lucky - Daily reward", value: "lucky" },
-        { name: "🎲 /taixiu - Dice game", value: "taixiu" },
-        { name: "🎃 /baucua - Animal dice", value: "baucua" },
-        { name: "🎰 /slot - Slot machine", value: "slot" },
-        { name: "🏇 /duangua - Horse racing", value: "duangua" },
-        { name: "🏆 /top - Leaderboard", value: "top" }
+        { name: "💰 /xu - Xem số xu", value: "xu" },
+        { name: "🍀 /lucky - Nhận xu hàng ngày", value: "lucky" },
+        { name: "🎲 /taixiu - Game tài xỉu", value: "taixiu" },
+        { name: "🎃 /baucua - Game bầu cua", value: "baucua" },
+        { name: "🎰 /slot - Game slot", value: "slot" },
+        { name: "🏇 /duangua - Uma Musume", value: "duangua" },
+        { name: "🏆 /top - Bảng xếp hạng", value: "top" }
       )
   )
 ];
