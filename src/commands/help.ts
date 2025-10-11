@@ -7,7 +7,7 @@ export async function helpCommand(c: CommandContext<{ Bindings: Env }>) {
 
   // Help information for each command
   const helpInfo: Record<string, string> = {
-    xu: `**📊 Lệnh /xu - Check Balance**
+    xu: `**📊 Lệnh /xu - Xem số xu**
     
 Xem số xu hiện tại của bạn.
 
@@ -17,7 +17,7 @@ Xem số xu hiện tại của bạn.
 **Ví dụ:**
 • \`/xu\` → Hiển thị: "Bạn hiện có **1000 xu**"`,
 
-    lucky: `**🍀 Lệnh /lucky - Daily Reward**
+    lucky: `**🍀 Lệnh /lucky - Nhận xu hàng ngày**
     
 Nhận xu miễn phí mỗi ngày (0-100 xu random).
 
@@ -98,17 +98,15 @@ Quay slot machine với 7 biểu tượng khác nhau.
 
     duangua: `**🏇 Lệnh /duangua - Uma Musume**
 
-Đua ngựa với 8 mã nương.
-
 **Cách dùng:**
 \`/duangua <uma> <cuoc>\`
 
 **Tham số:**
-• \`uma\`: Chọn 1 trong 8 mã nương (Special Week, Tokai Teio, Gold Ship...)
+• \`uma\`: Chọn 1 mã nương (Special Week, Tokai Teio, Gold Ship...)
 • \`cuoc\`: Số xu muốn cược (phải > 0)
 
 **Các chỉ số của mã nương:**
-• 🏃‍♀️ Speed (400-1200): Tốc độ di chuyển base
+• 🏃‍♀️ Speed (400-1200): Tốc độ di chuyển
 • 💪 Stamina (400-1200): Sức bền, giảm dần trong race
 • ⚡ Power (400-1200): Khả năng bứt tốc
 • 💃 Guts (400-1200): Tinh thần, mạnh cuối race
@@ -157,10 +155,10 @@ Xem bảng xếp hạng top 10 người chơi giàu nhất.
 • \`/lucky\` - Nhận xu miễn phí mỗi ngày
 
 **🎲 Trò chơi:**
-• \`/taixiu\` - Game tài xỉu (3 xúc xắc)
-• \`/baucua\` - Game bầu cua (6 con vật)
-• \`/slot\` - Slot machine (7 biểu tượng)
-• \`/duangua\` - Đua ngựa Uma Musume (5 stats system)
+• \`/taixiu\` - Game tài xỉu
+• \`/baucua\` - Game bầu cua
+• \`/slot\` - Slot machine
+• \`/duangua\` - Đua ngựa Uma Musume
 
 **📊 Xếp hạng:**
 • \`/top\` - Xem bảng xếp hạng
@@ -172,8 +170,7 @@ Xem bảng xếp hạng top 10 người chơi giàu nhất.
 • \`/help duangua\` - Xem hướng dẫn game đua ngựa
 • \`/help slot\` - Xem hướng dẫn slot machine
 
-**💡 Mẹo:**
-Bạn bắt đầu với 1000 xu! Sử dụng \`/lucky\` mỗi ngày để nhận thêm xu miễn phí.`,
+`,
       flags: 64,
     });
   }
