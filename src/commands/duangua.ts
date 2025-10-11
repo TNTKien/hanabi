@@ -218,6 +218,9 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
           }\n\n`;
           updateMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
           updateMsg += `Tỉ lệ cược: **x${chosenUmaInfo?.multiplier}**\n`;
+          if (chosenUmaInfo) {
+            updateMsg += `Stats: ${formatStats(chosenUmaInfo.stats)}\n`;
+          }
           updateMsg += `Cược: **${betAmount} xu** → Có thể thắng: **${Math.floor(
             betAmount * (chosenUmaInfo?.multiplier || 1)
           )} xu**\n\n`;
