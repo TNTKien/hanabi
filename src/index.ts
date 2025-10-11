@@ -1,6 +1,6 @@
 import { DiscordHono } from "discord-hono";
 
-const HOUSE_USER_ID = process.env.USER_ID!;
+const HOUSE_USER_ID = "559979358404608001"; // Change to your Discord User ID
 
 interface UserData {
   xu: number;
