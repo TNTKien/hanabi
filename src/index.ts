@@ -376,7 +376,178 @@ app.command("slot", async (c) => {
   });
 });
 
-// Lệnh /top - Xem leaderboard
+app.command("duangua", async (c) => {
+  const userId = c.interaction.member?.user.id || c.interaction.user?.id;
+  if (!userId) return c.res("Không thể xác định người dùng!");
+
+  // @ts-ignore
+  const betAmount = parseInt(c.get("cuoc") as string);
+  // @ts-ignore
+  const chosenUma = c.get("uma") as string;
+
+  if (!betAmount || betAmount < 1 || isNaN(betAmount) || !chosenUma) {
+    return c.res({
+      content: "Vui lòng nhập đúng thông tin!",
+      flags: 64,
+    });
+  }
+
+  const userData = await getUserData(userId, c.env.GAME_DB);
+
+  if (userData.xu < betAmount) {
+    return c.res({
+      content: `Bạn không đủ xu! (Có: **${userData.xu} xu**)`,
+      flags: 64,
+    });
+  }
+
+  interface UmaInfo {
+    id: string;
+    name: string;
+    emoji: string;
+    speed: number;
+    multiplier: number;
+  }
+
+  const umas: UmaInfo[] = [
+    {
+      id: "special_week",
+      name: "Special Week",
+      emoji: "<:special_week:1426674463457673296>",
+      speed: 0.4,
+      multiplier: 2,
+    },
+    {
+      id: "tokai_teio",
+      name: "Tokai Teio",
+      emoji: "<:tokai_teio:1426674466456342710>",
+      speed: 0.35,
+      multiplier: 2.5,
+    },
+    {
+      id: "kitasan_black",
+      name: "Kitasan Black",
+      emoji: "<:kitasan_black:1426674457312759869>",
+      speed: 0.3,
+      multiplier: 3,
+    },
+    {
+      id: "oguri_cap",
+      name: "Oguri Cap",
+      emoji: "<:oguri_cap:1426674472265453829>",
+      speed: 0.25,
+      multiplier: 3.5,
+    },
+    {
+      id: "tamamo_cross",
+      name: "Tamamo Cross",
+      emoji: "<:tamamo_cross:1426674469543612596>",
+      speed: 0.2,
+      multiplier: 4,
+    },
+    {
+      id: "satono_diamond",
+      name: "Satono Diamond",
+      emoji: "<:satono_diamond:1426674460756545566>",
+      speed: 0.15,
+      multiplier: 4.5,
+    },
+    {
+      id: "gold_ship",
+      name: "Gold Ship",
+      emoji: "<:gold_ship:1426674449910071438>",
+      speed: 0.1,
+      multiplier: 5,
+    },
+    {
+      id: "haru_urara",
+      name: "Haru Urara",
+      emoji: "<:haru_urara:1426674452573323487>",
+      speed: 0.05,
+      multiplier: 6,
+    },
+  ];
+
+  const positions = umas.map((uma) => ({
+    ...uma,
+    position: 0,
+  }));
+
+  const FINISH_LINE = 20;
+  let raceLog = `🏇 ĐUA NGỰA - BẮT ĐẦU!\n\n`;
+  raceLog += `Bạn chọn: ${umas.find((u) => u.id === chosenUma)?.emoji} **${
+    umas.find((u) => u.id === chosenUma)?.name
+  }**\n`;
+  raceLog += `Cược: **${betAmount} xu**\n\n`;
+
+  let round = 0;
+  let winner: (typeof positions)[0] | null = null;
+
+  while (!winner) {
+    round++;
+
+    for (const uma of positions) {
+      const baseMove = Math.floor(Math.random() * 3) + 1; // 1-3 bước
+      const speedBonus = Math.random() < uma.speed ? 1 : 0; // Cơ hội di chuyển thêm 1 bước
+      uma.position += baseMove + speedBonus;
+
+      if (uma.position >= FINISH_LINE && !winner) {
+        winner = uma;
+      }
+    }
+
+    if (round % 3 === 0 || winner) {
+      raceLog += `━━━━━━━━━━━━━━━━━━━━🏁\n`;
+      for (const uma of positions) {
+        const progress = Math.min(
+          Math.floor((uma.position / FINISH_LINE) * 12),
+          12
+        );
+        const bar = "█".repeat(progress) + "░".repeat(12 - progress);
+        raceLog += `${uma.emoji} ${bar} (${uma.position})\n`;
+      }
+      raceLog += `\n`;
+    }
+
+    if (round > 30) break;
+  }
+
+  if (!winner) {
+    return c.res({
+      content: "Đã xảy ra lỗi trong cuộc đua!",
+      flags: 64,
+    });
+  }
+
+  raceLog += `🏆 **CHIẾN THẮNG: ${winner.emoji} ${winner.name}!**\n\n`;
+
+  const isWin = winner.id === chosenUma;
+
+  if (isWin) {
+    const winAmount = Math.floor(betAmount * winner.multiplier);
+    userData.xu += winAmount;
+    raceLog += `**THẮNG!** +${winAmount} xu (x${winner.multiplier})`;
+  } else {
+    userData.xu -= betAmount;
+    raceLog += `**THUA!** -${betAmount} xu`;
+  }
+
+  raceLog += `\nTổng xu: **${userData.xu} xu**`;
+
+  // Update username and leaderboard
+  const username =
+    c.interaction.member?.user.username ||
+    c.interaction.user?.username ||
+    "Unknown";
+  userData.username = username;
+  await saveUserData(userId, userData, c.env.GAME_DB);
+  await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
+
+  return c.res({
+    content: raceLog,
+  });
+});
+
 app.command("top", async (c) => {
   const topUsers = await getTopUsers(c.env.GAME_DB, 10);
 

@@ -31,6 +31,22 @@ const commands = [
     new Option("cuoc", "Số xu muốn cược", "Integer").required()
   ),
   
+  new Command("duangua", "Đua ngựa - Chọn uma yêu thích của bạn!").options(
+    new Option("cuoc", "Số xu muốn cược", "Integer").required(),
+    new Option("uma", "Chọn uma")
+      .choices(
+        { name: "Special Week", value: "special_week" },
+        { name: "Tokai Teio", value: "tokai_teio" },
+        { name: "Gold Ship", value: "gold_ship" },
+        { name: "Kitasan Black", value: "kitasan_black" },
+        { name: "Oguri Cap", value: "oguri_cap" },
+        { name: "Tamamo Cross", value: "tamamo_cross" },
+        { name: "Haru Urara", value: "haru_urara" },
+        { name: "Satono Diamond", value: "satono_diamond" }
+      )
+      .required()
+  ),
+  
   new Command("top", "Xem bảng xếp hạng người chơi giàu nhất"),
   
   new Command("xu", "Xem số xu hiện tại của bạn")
