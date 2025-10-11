@@ -71,7 +71,7 @@ app.command("lucky", async (c) => {
   await saveUserData(userId, userData, c.env.GAME_DB);
 
   return c.res({
-    content: `🍀 **Lucky!** Bạn nhận được **${luckyAmount} xu**!\n💰 Tổng xu: **${userData.xu} xu**`,
+    content: `Bạn nhận được **${luckyAmount} xu**!`,
   });
 });
 
@@ -95,7 +95,7 @@ app.command("taixiu", async (c) => {
 
   if (userData.xu < betAmount) {
     return c.res({
-      content: `❌ Bạn không đủ xu! (Có: **${userData.xu} xu**)`,
+      content: `Bạn không đủ xu!`,
       flags: 64,
     });
   }
@@ -110,15 +110,15 @@ app.command("taixiu", async (c) => {
   const isWin = (choice === "tai" && isTai) || (choice === "xiu" && isXiu);
 
   let resultText = `🎲 **Kết quả:** ${dice1} - ${dice2} - ${dice3} = **${total}**\n`;
-  resultText += `${isTai ? "🔴 **TÀI**" : "� **XỈU**"}\n\n`;
+  resultText += `${isTai ? "🔴 **TÀI**" : "🔵 **XỈU**"}\n\n`;
 
   if (isWin) {
     userData.xu += betAmount;
-    resultText += `✅ **THẮNG!** +${betAmount} xu\n💰 Tổng xu: **${userData.xu} xu**`;
+    resultText += `✅ **THẮNG!** +${betAmount} xu`;
   } else {
     userData.xu -= betAmount;
     await transferToHouse(betAmount, c.env.GAME_DB);
-    resultText += `❌ **THUA!** -${betAmount} xu\n💰 Tổng xu: **${userData.xu} xu**`;
+    resultText += `❌ **THUA!** -${betAmount} xu`;
   }
 
   await saveUserData(userId, userData, c.env.GAME_DB);
@@ -148,7 +148,7 @@ app.command("baucua", async (c) => {
 
   if (userData.xu < betAmount) {
     return c.res({
-      content: `❌ Bạn không đủ xu! (Có: **${userData.xu} xu**)`,
+      content: `Bạn không đủ xu!`,
       flags: 64,
     });
   }
@@ -184,11 +184,11 @@ app.command("baucua", async (c) => {
   if (matches === 0) {
     userData.xu -= betAmount;
     await transferToHouse(betAmount, c.env.GAME_DB);
-    resultText += `❌ **THUA!** -${betAmount} xu\n💰 Tổng xu: **${userData.xu} xu**`;
+    resultText += `❌ **THUA!** -${betAmount} xu`;
   } else {
     const winAmount = betAmount * matches;
     userData.xu += winAmount;
-    resultText += `✅ **THẮNG ${matches}x!** +${winAmount} xu\n💰 Tổng xu: **${userData.xu} xu**`;
+    resultText += `✅ **THẮNG ${matches}x!** +${winAmount} xu`;
   }
 
   await saveUserData(userId, userData, c.env.GAME_DB);
