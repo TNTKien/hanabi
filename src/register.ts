@@ -27,6 +27,12 @@ const commands = [
     new Option("cuoc", "Số xu muốn cược", "Integer").required()
   ),
   
+  new Command("slot", "Quay slot machine").options(
+    new Option("cuoc", "Số xu muốn cược", "Integer").required()
+  ),
+  
+  new Command("top", "Xem bảng xếp hạng người chơi giàu nhất"),
+  
   new Command("xu", "Xem số xu hiện tại của bạn")
 ];
 
