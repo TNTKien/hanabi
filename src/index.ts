@@ -168,7 +168,6 @@ app.command("taixiu", async (c) => {
     resultText += `**THẮNG!** +${betAmount} xu`;
   } else {
     userData.xu -= betAmount;
-    await transferToHouse(betAmount, c.env.GAME_DB);
     resultText += `**THUA!** -${betAmount} xu`;
   }
 
@@ -243,7 +242,6 @@ app.command("baucua", async (c) => {
 
   if (matches === 0) {
     userData.xu -= betAmount;
-    await transferToHouse(betAmount, c.env.GAME_DB);
     resultText += `**THUA!** -${betAmount} xu`;
   } else {
     const winAmount = betAmount * matches;
@@ -359,7 +357,6 @@ app.command("slot", async (c) => {
     resultText += `**+${winAmount} xu** (x${multiplier})\n`;
   } else {
     userData.xu -= betAmount;
-    await transferToHouse(betAmount, c.env.GAME_DB);
     resultText += `**THUA!** -${betAmount} xu\n`;
   }
 
