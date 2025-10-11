@@ -1,10 +1,33 @@
 import { Command, Option, register } from "discord-hono";
 
 const commands = [
-  new Command("hello", "Hello, World!").options(
-    new Option("name", "Your name")
+  new Command("lucky", "Nhận xu may mắn mỗi ngày (0-100 xu)"),
+  
+  new Command("taixiu", "Chơi tài xỉu").options(
+    new Option("chon", "Chọn Tài (11-17) hoặc Xỉu (4-10)")
+      .choices(
+        { name: "Tài", value: "tai" },
+        { name: "Xỉu", value: "xiu" }
+      )
+      .required(),
+    new Option("tien", "Số xu muốn cược", "Integer").required()
   ),
-  new Command("help", "Docs URL")
+  
+  new Command("baucua", "Chơi bầu cua tôm cá").options(
+    new Option("chon", "Chọn con vật")
+      .choices(
+        { name: "🦀 Cua", value: "cua" },
+        { name: "🦐 Tôm", value: "tom" },
+        { name: "🐟 Cá", value: "ca" },
+        { name: "🦌 Nai", value: "nai" },
+        { name: "🎃 Bầu", value: "bau" },
+        { name: "🐓 Gà", value: "ga" }
+      )
+      .required(),
+    new Option("tien", "Số xu muốn cược", "Integer").required()
+  ),
+  
+  new Command("xu", "Xem số xu hiện tại của bạn")
 ];
 
 register(

@@ -1,21 +1,30 @@
-```txt
-npm install
-npm run dev
+# Hanabi 
+
+```bash
+bun install
+```
+## .env
+
+```bash
+DISCORD_APPLICATION_ID=your_app_id
+DISCORD_TOKEN=your_bot_token
+DISCORD_PUBLIC_KEY=your_public_key
 ```
 
-```txt
-npm run deploy
+## Cloudflare
+
+```bash
+wrangler login
+wrangler kv:namespace create "GAME_DB"
+```
+## Register commands
+
+```bash
+bun run register
 ```
 
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
+## Deploy
 
-```txt
-npm run cf-typegen
-```
-
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
+```bash
+bun run deploy
 ```

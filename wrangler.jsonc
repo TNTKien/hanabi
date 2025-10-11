@@ -13,7 +13,16 @@
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	/**
+	 * KV Namespace for storing user data
+	 */
+	"kv_namespaces": [
+		{
+			"binding": "GAME_DB",
+			"id": "4779470a237a4d84b96c245bf7742173"
+		}
+	],
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
