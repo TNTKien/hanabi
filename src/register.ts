@@ -10,7 +10,7 @@ const commands = [
         { name: "Xỉu", value: "xiu" }
       )
       .required(),
-    new Option("tien", "Số xu muốn cược", "Integer").required()
+    new Option("cuoc", "Số xu muốn cược", "Integer").required()
   ),
   
   new Command("baucua", "Chơi bầu cua tôm cá").options(
@@ -24,7 +24,7 @@ const commands = [
         { name: "🐓 Gà", value: "ga" }
       )
       .required(),
-    new Option("tien", "Số xu muốn cược", "Integer").required()
+    new Option("cuoc", "Số xu muốn cược", "Integer").required()
   ),
   
   new Command("xu", "Xem số xu hiện tại của bạn")

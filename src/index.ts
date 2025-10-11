@@ -82,7 +82,7 @@ app.command("taixiu", async (c) => {
   // @ts-ignore
   const choice = c.get("chon") as string;
   // @ts-ignore
-  const betAmount = parseInt(c.get("tien") as string);
+  const betAmount = parseInt(c.get("cuoc") as string);
 
   if (!choice || !betAmount || betAmount < 1 || isNaN(betAmount)) {
     return c.res({
@@ -135,7 +135,7 @@ app.command("baucua", async (c) => {
   // @ts-ignore
   const choice = c.get("chon") as string;
   // @ts-ignore
-  const betAmount = parseInt(c.get("tien") as string);
+  const betAmount = parseInt(c.get("cuoc") as string);
 
   if (!choice || !betAmount || betAmount < 1 || isNaN(betAmount)) {
     return c.res({
