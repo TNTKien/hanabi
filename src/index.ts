@@ -16,7 +16,7 @@ const app = new DiscordHono<{ Bindings: Env }>();
 async function getUserData(userId: string, kv: KVNamespace): Promise<UserData> {
   const data = await kv.get(`user:${userId}`);
   if (!data) {
-    return { xu: 1000 }; 
+    return { xu: 1000 };
   }
   return JSON.parse(data);
 }
@@ -58,7 +58,7 @@ app.command("lucky", async (c) => {
     const timeLeft = oneDay - (now - userData.lastLucky);
     const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
     const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-    
+
     return c.res({
       content: `Bạn đã nhận xu hôm nay rồi!\nThời gian còn lại: **${hoursLeft} giờ ${minutesLeft} phút**`,
       flags: 64,
@@ -117,7 +117,7 @@ app.command("taixiu", async (c) => {
     resultText += `✅ **THẮNG!** +${betAmount} xu`;
   } else {
     userData.xu -= betAmount;
-    await transferToHouse(betAmount, c.env.GAME_DB);
+
     resultText += `❌ **THUA!** -${betAmount} xu`;
   }
 
@@ -183,7 +183,7 @@ app.command("baucua", async (c) => {
 
   if (matches === 0) {
     userData.xu -= betAmount;
-    await transferToHouse(betAmount, c.env.GAME_DB);
+
     resultText += `❌ **THUA!** -${betAmount} xu`;
   } else {
     const winAmount = betAmount * matches;
