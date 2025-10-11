@@ -41,7 +41,7 @@ app.command("xu", async (c) => {
 
   const userData = await getUserData(userId, c.env.GAME_DB);
   return c.res({
-    content: `💰 Bạn hiện có **${userData.xu} xu**`,
+    content: `Bạn hiện có **${userData.xu} xu**`,
     flags: 64, // Ephemeral
   });
 });
@@ -60,7 +60,7 @@ app.command("lucky", async (c) => {
     const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
     
     return c.res({
-      content: `⏰ Bạn đã nhận xu hôm nay rồi!\nThời gian còn lại: **${hoursLeft} giờ ${minutesLeft} phút**`,
+      content: `Bạn đã nhận xu hôm nay rồi!\nThời gian còn lại: **${hoursLeft} giờ ${minutesLeft} phút**`,
       flags: 64,
     });
   }
@@ -109,8 +109,8 @@ app.command("taixiu", async (c) => {
   const isXiu = total >= 4 && total <= 10;
   const isWin = (choice === "tai" && isTai) || (choice === "xiu" && isXiu);
 
-  let resultText = `🎲 **Kết quả:** ${dice1} - ${dice2} - ${dice3} = **${total}**\n`;
-  resultText += `${isTai ? "🔴 **TÀI**" : "🔵 **XỈU**"}\n\n`;
+  let resultText = `🎲 **Kết quả:** ${dice1} + ${dice2} + ${dice3} = **${total}**\n`;
+  resultText += `${isTai ? "🔺 **TÀI**" : "🔻 **XỈU**"}\n\n`;
 
   if (isWin) {
     userData.xu += betAmount;
