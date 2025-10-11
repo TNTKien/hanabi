@@ -10,6 +10,7 @@ interface UserData {
 
 interface Env {
   GAME_DB: KVNamespace;
+  DISCORD_APPLICATION_ID: string;
 }
 
 const app = new DiscordHono<{ Bindings: Env }>();
@@ -474,78 +475,136 @@ app.command("duangua", async (c) => {
   }));
 
   const FINISH_LINE = 20;
-  let raceLog = `🏇 ĐUA NGỰA - BẮT ĐẦU!\n\n`;
-  raceLog += `Bạn chọn: ${umas.find((u) => u.id === chosenUma)?.emoji} **${
-    umas.find((u) => u.id === chosenUma)?.name
-  }**\n`;
-  raceLog += `Cược: **${betAmount} xu**\n\n`;
-
-  let round = 0;
-  let winner: (typeof positions)[0] | null = null;
-
-  while (!winner) {
-    round++;
-
-    for (const uma of positions) {
-      const baseMove = Math.floor(Math.random() * 3) + 1; // 1-3 bước
-      const speedBonus = Math.random() < uma.speed ? 1 : 0; // Cơ hội di chuyển thêm 1 bước
-      uma.position += baseMove + speedBonus;
-
-      if (uma.position >= FINISH_LINE && !winner) {
-        winner = uma;
-      }
+  const chosenUmaInfo = umas.find((u) => u.id === chosenUma);
+  
+  // Tạo initial response với deferred
+  const interactionResponse = new Response(
+    JSON.stringify({
+      type: 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    }),
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
     }
+  );
 
-    if (round % 3 === 0 || winner) {
-      raceLog += `━━━━━━━━━━━━━━━━━━━━🏁\n`;
+  // Webhook URL để update message
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
+
+  // Run race trong background (không await)
+  c.executionCtx.waitUntil(
+    (async () => {
+      // Initial message
+      let initialMsg = `🏇 ĐUA NGỰA - BẮT ĐẦU!\n\n`;
+      initialMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
+      initialMsg += `Cược: **${betAmount} xu**\n\n`;
+      initialMsg += `━━━━━━━━━━━━━━━━━━━━🏁\n`;
       for (const uma of positions) {
-        const progress = Math.min(
-          Math.floor((uma.position / FINISH_LINE) * 12),
-          12
-        );
-        const bar = "█".repeat(progress) + "░".repeat(12 - progress);
-        raceLog += `${uma.emoji} ${bar} (${uma.position})\n`;
+        initialMsg += `${uma.emoji} ░░░░░░░░░░░░ (0)\n`;
       }
-      raceLog += `\n`;
-    }
 
-    if (round > 30) break;
-  }
+      await fetch(webhookUrl, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: initialMsg }),
+      });
 
-  if (!winner) {
-    return c.res({
-      content: "Đã xảy ra lỗi trong cuộc đua!",
-      flags: 64,
-    });
-  }
+      // Run the race
+      let round = 0;
+      let winner: (typeof positions)[0] | null = null;
 
-  raceLog += `🏆 **CHIẾN THẮNG: ${winner.emoji} ${winner.name}!**\n\n`;
+      while (!winner) {
+        round++;
 
-  const isWin = winner.id === chosenUma;
+        for (const uma of positions) {
+          const baseMove = Math.floor(Math.random() * 3) + 1;
+          const speedBonus = Math.random() < uma.speed ? 1 : 0;
+          uma.position += baseMove + speedBonus;
 
-  if (isWin) {
-    const winAmount = Math.floor(betAmount * winner.multiplier);
-    userData.xu += winAmount;
-    raceLog += `**THẮNG!** +${winAmount} xu (x${winner.multiplier})`;
-  } else {
-    userData.xu -= betAmount;
-    raceLog += `**THUA!** -${betAmount} xu`;
-  }
+          if (uma.position >= FINISH_LINE && !winner) {
+            winner = uma;
+          }
+        }
 
-  raceLog += `\nTổng xu: **${userData.xu} xu**`;
+        // Update every 2 rounds
+        if (round % 2 === 0 || winner) {
+          let updateMsg = `🏇 ĐUA NGỰA - ${
+            winner ? "KẾT THÚC!" : `VÒNG ${round}`
+          }\n\n`;
+          updateMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
+          updateMsg += `Cược: **${betAmount} xu**\n\n`;
+          updateMsg += `━━━━━━━━━━━━━━━━━━━━🏁\n`;
 
-  // Update username and leaderboard
-  const username =
-    c.interaction.member?.user.username ||
-    c.interaction.user?.username ||
-    "Unknown";
-  userData.username = username;
-  await saveUserData(userId, userData, c.env.GAME_DB);
-  await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
+          for (const uma of positions) {
+            const progress = Math.min(
+              Math.floor((uma.position / FINISH_LINE) * 12),
+              12
+            );
+            const bar = "█".repeat(progress) + "░".repeat(12 - progress);
+            updateMsg += `${uma.emoji} ${bar} (${uma.position})\n`;
+          }
 
-  return c.res({
-    content: raceLog,
-  });
+          // Add winner info if race ended
+          if (winner) {
+            updateMsg += `\n🏆 **CHIẾN THẮNG: ${winner.emoji} ${winner.name}!**\n\n`;
+
+            const isWin = winner.id === chosenUma;
+
+            if (isWin) {
+              const winAmount = Math.floor(betAmount * winner.multiplier);
+              userData.xu += winAmount;
+              updateMsg += `**THẮNG!** +${winAmount} xu (x${winner.multiplier})`;
+            } else {
+              userData.xu -= betAmount;
+              updateMsg += `**THUA!** -${betAmount} xu`;
+            }
+
+            updateMsg += `\nTổng xu: **${userData.xu} xu**`;
+
+            // Update username and leaderboard
+            const username =
+              c.interaction.member?.user.username ||
+              c.interaction.user?.username ||
+              "Unknown";
+            userData.username = username;
+            await saveUserData(userId, userData, c.env.GAME_DB);
+            await updateLeaderboard(
+              userId,
+              username,
+              userData.xu,
+              c.env.GAME_DB
+            );
+          }
+
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: updateMsg }),
+          });
+
+          // Small delay for visual effect
+          if (!winner) {
+            await new Promise((resolve) => setTimeout(resolve, 800));
+          }
+        }
+
+        if (round > 30) break;
+      }
+
+      if (!winner) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: "Đã xảy ra lỗi trong cuộc đua!",
+          }),
+        });
+      }
+    })()
+  );
+
+  return interactionResponse;
 });
 
 app.command("top", async (c) => {
