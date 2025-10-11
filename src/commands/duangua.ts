@@ -152,7 +152,7 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
       initialMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
       initialMsg += `Tỉ lệ cược: **x${chosenUmaInfo?.multiplier}**\n`;
       if (chosenUmaInfo) {
-        initialMsg += `Stats: ${formatStats(chosenUmaInfo.stats)}\n`;
+        initialMsg += `Chỉ số: ${formatStats(chosenUmaInfo.stats)}\n`;
       }
       initialMsg += `Cược: **${betAmount} xu** → Có thể thắng: **${Math.floor(
         betAmount * (chosenUmaInfo?.multiplier || 1)
@@ -217,9 +217,9 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
             winner ? "KẾT THÚC!" : `VÒNG ${round}`
           }\n\n`;
           updateMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
-          updateMsg += `Tỉ lệ cược: **x${chosenUmaInfo?.multiplier}**\n`;
+          updateMsg += `Tỷ lệ cược: **x${chosenUmaInfo?.multiplier}**\n`;
           if (chosenUmaInfo) {
-            updateMsg += `Stats: ${formatStats(chosenUmaInfo.stats)}\n`;
+            updateMsg += `Chỉ số: ${formatStats(chosenUmaInfo.stats)}\n`;
           }
           updateMsg += `Cược: **${betAmount} xu** → Có thể thắng: **${Math.floor(
             betAmount * (chosenUmaInfo?.multiplier || 1)
