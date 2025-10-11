@@ -474,7 +474,7 @@ app.command("duangua", async (c) => {
     position: 0,
   }));
 
-  const FINISH_LINE = 20;
+  const FINISH_LINE = 40;
   const chosenUmaInfo = umas.find((u) => u.id === chosenUma);
   
   // Tạo initial response với deferred

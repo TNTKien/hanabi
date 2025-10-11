@@ -31,9 +31,8 @@ const commands = [
     new Option("cuoc", "Số xu muốn cược", "Integer").required()
   ),
   
-  new Command("duangua", "Đua ngựa - Chọn uma yêu thích của bạn!").options(
-    new Option("cuoc", "Số xu muốn cược", "Integer").required(),
-    new Option("uma", "Chọn uma")
+  new Command("duangua", "Hashire hashire uma musume 🗣🗣🐎🐎").options(
+    new Option("uma", "Chọn mã nương")
       .choices(
         { name: "Special Week", value: "special_week" },
         { name: "Tokai Teio", value: "tokai_teio" },
@@ -44,7 +43,8 @@ const commands = [
         { name: "Haru Urara", value: "haru_urara" },
         { name: "Satono Diamond", value: "satono_diamond" }
       )
-      .required()
+      .required(),
+    new Option("cuoc", "Số xu muốn cược", "Integer").required()
   ),
   
   new Command("top", "Xem bảng xếp hạng người chơi giàu nhất"),
