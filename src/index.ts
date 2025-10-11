@@ -410,64 +410,64 @@ app.command("duangua", async (c) => {
     multiplier: number;
   }
 
-  const umas: UmaInfo[] = [
+  // Base uma data
+  const baseUmas = [
     {
       id: "special_week",
       name: "Special Week",
       emoji: "<:special_week:1426674463457673296>",
-      speed: 0.4,
-      multiplier: 2,
     },
     {
       id: "tokai_teio",
       name: "Tokai Teio",
       emoji: "<:tokai_teio:1426674466456342710>",
-      speed: 0.35,
-      multiplier: 2.5,
     },
     {
       id: "kitasan_black",
       name: "Kitasan Black",
       emoji: "<:kitasan_black:1426674457312759869>",
-      speed: 0.3,
-      multiplier: 3,
     },
     {
       id: "oguri_cap",
       name: "Oguri Cap",
       emoji: "<:oguri_cap:1426674472265453829>",
-      speed: 0.25,
-      multiplier: 3.5,
     },
     {
       id: "tamamo_cross",
       name: "Tamamo Cross",
       emoji: "<:tamamo_cross:1426674469543612596>",
-      speed: 0.2,
-      multiplier: 4,
     },
     {
       id: "satono_diamond",
       name: "Satono Diamond",
       emoji: "<:satono_diamond:1426674460756545566>",
-      speed: 0.15,
-      multiplier: 4.5,
     },
     {
       id: "gold_ship",
       name: "Gold Ship",
       emoji: "<:gold_ship:1426674449910071438>",
-      speed: 0.1,
-      multiplier: 5,
     },
     {
       id: "haru_urara",
       name: "Haru Urara",
       emoji: "<:haru_urara:1426674452573323487>",
-      speed: 0.05,
-      multiplier: 6,
     },
   ];
+
+  // Randomize stats for each uma
+  const umas: UmaInfo[] = baseUmas.map((uma) => {
+    // Speed: 0.05 - 0.45 (random)
+    const speed = Math.random() * 0.4 + 0.05;
+    // Multiplier inverse to speed: higher speed = lower multiplier
+    // Speed 0.45 -> x2, Speed 0.05 -> x6
+    const multiplier = Math.round((2 + (0.45 - speed) * 10) * 10) / 10;
+
+    return {
+      ...uma,
+      speed: Math.round(speed * 100) / 100,
+      multiplier: Math.max(2, Math.min(6, multiplier)),
+    };
+  });
 
   const positions = umas.map((uma) => ({
     ...uma,
@@ -476,7 +476,7 @@ app.command("duangua", async (c) => {
 
   const FINISH_LINE = 40;
   const chosenUmaInfo = umas.find((u) => u.id === chosenUma);
-  
+
   // Tạo initial response với deferred
   const interactionResponse = new Response(
     JSON.stringify({
@@ -498,7 +498,12 @@ app.command("duangua", async (c) => {
       // Initial message
       let initialMsg = `🏇 ĐUA NGỰA - BẮT ĐẦU!\n\n`;
       initialMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
-      initialMsg += `Cược: **${betAmount} xu**\n\n`;
+      initialMsg += `Tỉ lệ cược: **x${
+        chosenUmaInfo?.multiplier
+      }** (Tốc độ: ${Math.round((chosenUmaInfo?.speed || 0) * 100)}%)\n`;
+      initialMsg += `Cược: **${betAmount} xu** → Có thể thắng: **${Math.floor(
+        betAmount * (chosenUmaInfo?.multiplier || 1)
+      )} xu**\n\n`;
       initialMsg += `━━━━━━━━━━━━━━━━━━━━🏁\n`;
       for (const uma of positions) {
         initialMsg += `${uma.emoji} ░░░░░░░░░░░░ (0)\n`;
@@ -533,7 +538,12 @@ app.command("duangua", async (c) => {
             winner ? "KẾT THÚC!" : `VÒNG ${round}`
           }\n\n`;
           updateMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
-          updateMsg += `Cược: **${betAmount} xu**\n\n`;
+          updateMsg += `Tỉ lệ cược: **x${
+            chosenUmaInfo?.multiplier
+          }** (Tốc độ: ${Math.round((chosenUmaInfo?.speed || 0) * 100)}%)\n`;
+          updateMsg += `Cược: **${betAmount} xu** → Có thể thắng: **${Math.floor(
+            betAmount * (chosenUmaInfo?.multiplier || 1)
+          )} xu**\n\n`;
           updateMsg += `━━━━━━━━━━━━━━━━━━━━🏁\n`;
 
           for (const uma of positions) {
