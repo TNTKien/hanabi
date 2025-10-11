@@ -1,4 +1,6 @@
-# Hanabi 
+# [<img alt="Static Badge" src="https://img.shields.io/badge/H%C3%A2nbi%235588-Invite-blue?logo=discord">](https://discord.com/oauth2/authorize?client_id=1415887405478580265)
+
+A Discord bot for playing some games. 100% vibe coding.
 
 ```bash
 bun install
