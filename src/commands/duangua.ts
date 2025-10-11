@@ -2,12 +2,22 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 
+interface UmaStats {
+  speed: number;      // 🏃‍♀️ Maximum speed (400-1200)
+  stamina: number;    // 💪 Endurance (400-1200)
+  power: number;      // ⚡ Acceleration power (400-1200)
+  guts: number;       // 💃 Fighting spirit (400-1200)
+  wisdom: number;     // 💡 Intelligence (400-1200)
+}
+
 interface UmaInfo {
   id: string;
   name: string;
   emoji: string;
-  speed: number;
+  stats: UmaStats;
   multiplier: number;
+  position: number;
+  currentStamina: number; // Current stamina during race
 }
 
 export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
@@ -79,30 +89,47 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
     },
   ];
 
-  // Randomize stats for each uma
+  // Randomize stats for each uma (total max 1200 points per stat)
+  const generateRandomStats = (): UmaStats => {
+    return {
+      speed: Math.floor(Math.random() * 801) + 400,      // 400-1200
+      stamina: Math.floor(Math.random() * 801) + 400,    // 400-1200
+      power: Math.floor(Math.random() * 801) + 400,      // 400-1200
+      guts: Math.floor(Math.random() * 801) + 400,       // 400-1200
+      wisdom: Math.floor(Math.random() * 801) + 400,     // 400-1200
+    };
+  };
+
   const umas: UmaInfo[] = baseUmas.map((uma) => {
-    // Speed: 0.05 - 0.45 (random)
-    const speed = Math.random() * 0.4 + 0.05;
-    // Multiplier inverse to speed: higher speed = lower multiplier
-    // Speed 0.45 -> x2, Speed 0.05 -> x6
-    const multiplier = Math.round((2 + (0.45 - speed) * 10) * 10) / 10;
+    const stats = generateRandomStats();
+    
+    // Calculate total stats to determine multiplier
+    const totalStats = stats.speed + stats.stamina + stats.power + stats.guts + stats.wisdom;
+    const avgStat = totalStats / 5;
+    
+    // High stats -> low multiplier (easier to win)
+    // Low stats -> high multiplier (harder to win, bigger reward)
+    // avgStat: 400-1200 => multiplier: 6-2
+    const multiplier = Math.round((8 - (avgStat / 200)) * 10) / 10;
 
     return {
       ...uma,
-      speed: Math.round(speed * 100) / 100,
+      stats,
       multiplier: Math.max(2, Math.min(6, multiplier)),
+      position: 0,
+      currentStamina: stats.stamina, // Start with full stamina
     };
   });
-
-  const positions = umas.map((uma) => ({
-    ...uma,
-    position: 0,
-  }));
 
   const FINISH_LINE = 40;
   const chosenUmaInfo = umas.find((u) => u.id === chosenUma);
 
-  // Tạo initial response với deferred
+  // Helper function to format stats display
+  const formatStats = (stats: UmaStats) => {
+    return `🏃‍♀️${stats.speed} 💪${stats.stamina} ⚡${stats.power} 💃${stats.guts} 💡${stats.wisdom}`;
+  };
+
+  // Create initial deferred response
   const interactionResponse = new Response(
     JSON.stringify({
       type: 5, // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
@@ -114,23 +141,24 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
     }
   );
 
-  // Webhook URL để update message
+  // Webhook URL to update message
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
-  // Run race trong background (không await)
+  // Run race in background (no await)
   c.executionCtx.waitUntil(
     (async () => {
-      // Initial message
+      // Initial message with stats
       let initialMsg = `🏇 ĐUA NGỰA - BẮT ĐẦU!\n\n`;
       initialMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
-      initialMsg += `Tỉ lệ cược: **x${
-        chosenUmaInfo?.multiplier
-      }** (Tốc độ: ${Math.round((chosenUmaInfo?.speed || 0) * 100)}%)\n`;
+      initialMsg += `Tỉ lệ cược: **x${chosenUmaInfo?.multiplier}**\n`;
+      if (chosenUmaInfo) {
+        initialMsg += `Stats: ${formatStats(chosenUmaInfo.stats)}\n`;
+      }
       initialMsg += `Cược: **${betAmount} xu** → Có thể thắng: **${Math.floor(
         betAmount * (chosenUmaInfo?.multiplier || 1)
       )} xu**\n\n`;
       initialMsg += `━━━━━━━━━━━━━━━━━━━━🏁\n`;
-      for (const uma of positions) {
+      for (const uma of umas) {
         initialMsg += `${uma.emoji} ░░░░░░░░░░░░ (0)\n`;
       }
 
@@ -140,44 +168,70 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
         body: JSON.stringify({ content: initialMsg }),
       });
 
-      // Run the race
+      // Run the race with 5 stats system
       let round = 0;
-      let winner: (typeof positions)[0] | null = null;
+      let winner: UmaInfo | null = null;
+      const isEndGame = () => round >= 25; // Limit to 25 rounds to avoid infinite loop
 
-      while (!winner) {
+      while (!winner && !isEndGame()) {
         round++;
 
-        for (const uma of positions) {
-          const baseMove = Math.floor(Math.random() * 3) + 1;
-          const speedBonus = Math.random() < uma.speed ? 1 : 0;
-          uma.position += baseMove + speedBonus;
+        for (const uma of umas) {
+          // 🏃‍♀️ Speed: Affects base movement speed
+          const speedFactor = uma.stats.speed / 1200; // 0.33-1.0
+          const baseMove = Math.floor(Math.random() * 2 + 1 + speedFactor); // 1-4 steps
+          
+          // ⚡ Power: Affects burst acceleration (20% chance)
+          const powerFactor = uma.stats.power / 1200;
+          const powerBoost = Math.random() < powerFactor * 0.2 ? 1 : 0;
+          
+          // 💪 Stamina: Decreases over time, affects speed
+          uma.currentStamina -= 30; // Lose stamina each turn
+          const staminaFactor = Math.max(0, uma.currentStamina / uma.stats.stamina); // 0-1
+          const staminaPenalty = staminaFactor < 0.3 ? -1 : 0; // Slow down when out of stamina
+          
+          // 💡 Wisdom: Helps recover stamina (10% chance)
+          const wisdomFactor = uma.stats.wisdom / 1200;
+          if (Math.random() < wisdomFactor * 0.1) {
+            uma.currentStamina += 50; // Recover stamina
+          }
+          
+          // 💃 Guts: Strong effect in final stretch (after 70%)
+          const progressPercent = uma.position / FINISH_LINE;
+          const gutsFactor = uma.stats.guts / 1200;
+          const gutsBoost = progressPercent > 0.7 && Math.random() < gutsFactor * 0.3 ? 1 : 0;
+          
+          // Calculate total movement
+          const totalMove = Math.max(1, baseMove + powerBoost + staminaPenalty + gutsBoost);
+          uma.position += totalMove;
 
+          // Check winner
           if (uma.position >= FINISH_LINE && !winner) {
             winner = uma;
           }
         }
 
         // Update every 2 rounds
-        if (round % 2 === 0 || winner) {
+        if (round % 2 === 0 || winner || isEndGame()) {
           let updateMsg = `🏇 ĐUA NGỰA - ${
             winner ? "KẾT THÚC!" : `VÒNG ${round}`
           }\n\n`;
           updateMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
-          updateMsg += `Tỉ lệ cược: **x${
-            chosenUmaInfo?.multiplier
-          }** (Tốc độ: ${Math.round((chosenUmaInfo?.speed || 0) * 100)}%)\n`;
+          updateMsg += `Tỉ lệ cược: **x${chosenUmaInfo?.multiplier}**\n`;
           updateMsg += `Cược: **${betAmount} xu** → Có thể thắng: **${Math.floor(
             betAmount * (chosenUmaInfo?.multiplier || 1)
           )} xu**\n\n`;
           updateMsg += `━━━━━━━━━━━━━━━━━━━━🏁\n`;
 
-          for (const uma of positions) {
+          for (const uma of umas) {
             const progress = Math.min(
               Math.floor((uma.position / FINISH_LINE) * 12),
               12
             );
             const bar = "█".repeat(progress) + "░".repeat(12 - progress);
-            updateMsg += `${uma.emoji} ${bar} (${uma.position})\n`;
+            const staminaPercent = Math.round((uma.currentStamina / uma.stats.stamina) * 100);
+            const staminaIcon = staminaPercent > 50 ? "💪" : staminaPercent > 20 ? "😮" : "💨";
+            updateMsg += `${uma.emoji} ${bar} (${uma.position}) ${staminaIcon}\n`;
           }
 
           // Add winner info if race ended
