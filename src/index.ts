@@ -9,6 +9,7 @@ import { baucuaCommand } from "./commands/baucua";
 import { slotCommand } from "./commands/slot";
 import { duanguaCommand } from "./commands/duangua";
 import { topCommand } from "./commands/top";
+import { helpCommand } from "./commands/help";
 
 const app = new DiscordHono<{ Bindings: Env }>();
 
@@ -20,5 +21,6 @@ app.command("baucua", baucuaCommand);
 app.command("slot", slotCommand);
 app.command("duangua", duanguaCommand);
 app.command("top", topCommand);
+app.command("help", helpCommand);
 
 export default app;
