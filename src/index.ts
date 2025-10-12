@@ -11,6 +11,8 @@ import { duanguaCommand } from "./commands/duangua";
 import { topCommand } from "./commands/top";
 import { helpCommand } from "./commands/help";
 import { napCommand } from "./commands/nap";
+import { boxCommand } from "./commands/box";
+import { caucaCommand } from "./commands/cauca";
 
 const app = new DiscordHono<{ Bindings: Env }>();
 
@@ -24,5 +26,7 @@ app.command("duangua", duanguaCommand);
 app.command("top", topCommand);
 app.command("help", helpCommand);
 app.command("nap", napCommand);
+app.command("box", boxCommand);
+app.command("cauca", caucaCommand);
 
 export default app;

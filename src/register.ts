@@ -60,6 +60,8 @@ const commands = [
         { name: "🎃 /baucua - Game bầu cua", value: "baucua" },
         { name: "🎰 /slot - Game slot", value: "slot" },
         { name: "🏇 /duangua - Uma Musume", value: "duangua" },
+        { name: "📦 /box - Hộp bí ẩn", value: "box" },
+        { name: "🎣 /cauca - Câu cá", value: "cauca" },
         { name: "🏆 /top - Bảng xếp hạng", value: "top" }
       )
   ),
@@ -67,7 +69,11 @@ const commands = [
   new Command("nap", "Nạp xu cho người chơi (Chỉ nhà cái)").options(
     new Option("user", "Chọn người chơi cần nạp xu", "User").required(),
     new Option("amount", "Số xu muốn nạp", "Integer").required()
-  )
+  ),
+  
+  new Command("box", "Mở hộp bí ẩn để nhận xu (8 giờ/lần)"),
+  
+  new Command("cauca", "Câu cá để kiếm xu (90 giây/lần)")
 ];
 
 register(

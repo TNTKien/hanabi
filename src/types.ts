@@ -2,6 +2,11 @@ export interface UserData {
   xu: number;
   lastLucky?: number;
   username?: string;
+  lastBox?: number;
+  buffActive?: boolean;
+  buffMultiplier?: number;
+  lastFish?: number;
+  fishCollection?: Record<string, number>;
 }
 
 export interface Env {

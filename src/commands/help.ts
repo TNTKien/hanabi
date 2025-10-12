@@ -143,6 +143,61 @@ Xem bảng xếp hạng top 10 người chơi giàu nhất.
 
 **Ví dụ:**
 • \`/top\` → Hiển thị bảng xếp hạng`,
+
+    box: `**🎁 Lệnh /box - Mystery Box**
+    
+Mở hộp bí ẩn để nhận xu ngẫu nhiên! Có thể nhận được buff hoặc bị nổ!
+
+**Cách dùng:**
+\`/box\`
+
+**Cooldown:**
+• 8 giờ mỗi lần (3 hộp mỗi ngày)
+
+**Phần thưởng:**
+• 80% thường: +100 đến +2,000 xu
+• 10.5% hiếm: +1,000 đến +5,000 xu
+• 4.5% boom: -50 đến -500 xu (hộp nổ!)
+• 5% jackpot: +1,000 đến +3,000 xu + **buff x2** cho game tiếp theo!
+
+**Buff x2:**
+• Khi có buff, thắng game bất kỳ sẽ được nhân đôi phần thưởng!
+• Buff dùng 1 lần và hết
+
+**Ví dụ:**
+• \`/box\` → Mở hộp may mắn
+• Nhận 2000 xu + buff x2 → Chơi slot thắng 500 xu → Thực nhận 1000 xu!`,
+
+    cauca: `**🎣 Lệnh /cauca - Fishing**
+    
+Câu cá để kiếm xu! Thu thập đủ 9 loài cá khác nhau!
+
+**Cách dùng:**
+\`/cauca\`
+
+**Cooldown:**
+• 90 giây mỗi lần (1 phút 30 giây)
+
+**Các loài cá:**
+• ⚪ Common (70%): +100 đến +500 xu
+  - 🐟 Cá Rô, 🐠 Cá Chép, 🐡 Cá Nóc
+
+• 🔵 Rare (25%): +500 đến +1,500 xu
+  - 🐟 Cá Hồi, 🐠 Cá Ngừ
+
+• 🟣 Epic (4%): +1,500 đến +5,000 xu
+  - 🐡 Cá Mập, 🦈 Cá Mập Trắng
+
+• 🟡 Legendary (1%): +5,000 đến +20,000 xu
+  - 🐋 Cá Voi, 🐉 Rồng Biển
+
+**Bộ sưu tập:**
+• Track số lượng từng loài cá đã câu được
+• Hiển thị tổng số loài unique và tổng số cá
+
+**Ví dụ:**
+• \`/cauca\` → Câu cá
+• \`🟡 Bạn câu được: 🐋 Cá Voi\` → +15,000 xu!`,
   };
 
   // If no command selected, show general help
@@ -160,6 +215,10 @@ Xem bảng xếp hạng top 10 người chơi giàu nhất.
 • \`/slot\` - Slot machine
 • \`/duangua\` - Đua ngựa Uma Musume
 
+**🎁 Kiếm Xu Miễn Phí:**
+• \`/box\` - Mở hộp bí ẩn (8h/lần)
+• \`/cauca\` - Câu cá kiếm xu (90s/lần)
+
 **📊 Xếp hạng:**
 • \`/top\` - Xem bảng xếp hạng
 
@@ -168,7 +227,7 @@ Xem bảng xếp hạng top 10 người chơi giàu nhất.
 
 **Ví dụ:**
 • \`/help duangua\` - Xem hướng dẫn game đua ngựa
-• \`/help slot\` - Xem hướng dẫn slot machine
+• \`/help cauca\` - Xem hướng dẫn câu cá
 
 `,
       // flags: 64,
