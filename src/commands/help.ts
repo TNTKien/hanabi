@@ -186,6 +186,6 @@ Xem bảng xếp hạng top 10 người chơi giàu nhất.
 
   return c.res({
     content: help,
-    flags: 64,
+    // flags: 64,
   });
 }
