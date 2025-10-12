@@ -151,7 +151,7 @@ function formatResults(results: BACharacter[], bannerCharacter: BACharacter | nu
   for (let i = 0; i < 5; i++) {
     output += getRarityEmoji(results[i].rarity) + " ";
   }
-  output += "\n";
+  output += "\n\n";
   
   // Second row (5 cards)
   for (let i = 5; i < 10; i++) {
