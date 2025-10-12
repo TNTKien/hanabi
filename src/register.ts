@@ -62,9 +62,9 @@ const commands = [
         { name: "🏇 /duangua - Uma Musume", value: "duangua" },
         { name: "📦 /box - Hộp bí ẩn", value: "box" },
         { name: "🎣 /cauca - Câu cá", value: "cauca" },
-        { name: "� /gacha - Gacha system", value: "gacha" },
+        { name: "💌 /gacha - Gacha Oaifu", value: "gacha" },
         { name: "⭐ /banner - Rate-up banner", value: "banner" },
-        { name: "�🏆 /top - Bảng xếp hạng", value: "top" }
+        { name: "🏆 /top - Bảng xếp hạng", value: "top" }
       )
   ),
   
