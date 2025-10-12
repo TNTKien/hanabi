@@ -6,7 +6,7 @@ export async function getUserData(
 ): Promise<UserData> {
   const data = await kv.get(`user:${userId}`);
   if (!data) {
-    return { xu: 1000 };
+    return { xu: 10000 };
   }
   return JSON.parse(data);
 }
