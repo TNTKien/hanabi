@@ -144,14 +144,30 @@ function formatResults(results: BACharacter[], bannerCharacter: BACharacter | nu
     }
   });
   
-  let output = "**📊 Kết quả:**\n";
-  output += `🟦 R: ${counts.R} | 🟨 SR: ${counts.SR} | 🟪 SSR: ${counts.SSR}\n\n`;
+  // Display as 5x2 grid
+  let output = "**📊 Kết quả:**\n\n";
   
+  // First row (5 cards)
+  for (let i = 0; i < 5; i++) {
+    output += getRarityEmoji(results[i].rarity);
+  }
+  output += "\n";
+  
+  // Second row (5 cards)
+  for (let i = 5; i < 10; i++) {
+    output += getRarityEmoji(results[i].rarity);
+  }
+  output += "\n\n";
+  
+  // Summary counts
+  output += `🟦 R: ${counts.R} | 🟨 SR: ${counts.SR} | 🟪 SSR: ${counts.SSR}\n`;
+  
+  // List high rarity characters
   if (ssrNames.length > 0) {
-    output += `🟪 **SSR:** ${ssrNames.join(", ")}\n`;
+    output += `\n🟪 **SSR:** ${ssrNames.join(", ")}`;
   }
   if (srNames.length > 0) {
-    output += `🟨 **SR:** ${srNames.join(", ")}\n`;
+    output += `\n🟨 **SR:** ${srNames.join(", ")}`;
   }
   
   return output;
