@@ -149,13 +149,13 @@ function formatResults(results: BACharacter[], bannerCharacter: BACharacter | nu
   
   // First row (5 cards)
   for (let i = 0; i < 5; i++) {
-    output += getRarityEmoji(results[i].rarity);
+    output += getRarityEmoji(results[i].rarity) + " ";
   }
   output += "\n";
   
   // Second row (5 cards)
   for (let i = 5; i < 10; i++) {
-    output += getRarityEmoji(results[i].rarity);
+    output += getRarityEmoji(results[i].rarity) + " ";
   }
   output += "\n\n";
   
