@@ -62,6 +62,8 @@ const commands = [
         { name: "🏇 /duangua - Uma Musume", value: "duangua" },
         { name: "📦 /box - Hộp bí ẩn", value: "box" },
         { name: "🎣 /cauca - Câu cá", value: "cauca" },
+        { name: "💌 /gacha - Gacha Oaifu", value: "gacha" },
+        { name: "⭐ /banner - Rate-up banner", value: "banner" },
         { name: "🏆 /top - Bảng xếp hạng", value: "top" }
       )
   ),
@@ -73,7 +75,19 @@ const commands = [
   
   new Command("box", "Mở hộp bí ẩn để nhận xu (8 giờ/lần)"),
   
-  new Command("cauca", "Câu cá để kiếm xu (90 giây/lần)")
+  new Command("cauca", "Câu cá để kiếm xu (90 giây/lần)"),
+  
+  new Command("gacha", "Gacha nhân vật (1200 xu/10 rolls)").options(
+    new Option("game", "Chọn game gacha")
+      .choices({ name: "Blue Archive", value: "blue_archive" })
+      .required()
+  ),
+  
+  new Command("banner", "Xem banner rate-up hiện tại").options(
+    new Option("game", "Chọn game")
+      .choices({ name: "Blue Archive", value: "blue_archive" })
+      .required()
+  )
 ];
 
 register(

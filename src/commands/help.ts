@@ -198,6 +198,62 @@ Câu cá để kiếm xu! Thu thập đủ 9 loài cá khác nhau!
 **Ví dụ:**
 • \`/cauca\` → Câu cá
 • \`🟡 Bạn câu được: 🐋 Cá Voi\` → +15,000 xu!`,
+
+    gacha: `**🎰 Lệnh /gacha - Gacha System**
+    
+Gacha để thu thập nhân vật từ các game anime!
+
+**Cách dùng:**
+\`/gacha <game>\`
+
+**Game hiện có:**
+• Blue Archive
+
+**Blue Archive:**
+• 💰 Giá: **1,200 xu** cho 10 roll
+• 🎯 Ít nhất 1 SR trở lên mỗi 10 rolls
+
+**Tỷ lệ:**
+• 🟦 R: 78.5%
+• 🟨 SR: 18.5%
+• 🟪 SSR: 1.5%
+
+**Rate-Up Banner:**
+• Mỗi 24h có 1 nhân vật SSR được rate-up
+• Tỷ lệ nhận rate-up character tăng gấp đôi!
+• Xem banner hiện tại bằng \`/banner\`
+
+**Collection:**
+• Tất cả nhân vật gacha được sẽ được lưu vào collection
+• Track số lượng từng nhân vật đã có
+
+**Ví dụ:**
+• \`/gacha blue_archive\` → Gacha 10 rolls Blue Archive
+• Có thể nhận: Aru, Haruna, Hoshino, Shiroko...`,
+
+    banner: `**⭐ Lệnh /banner - Rate-Up Banner**
+    
+Xem nhân vật đang được rate-up hiện tại!
+
+**Cách dùng:**
+\`/banner <game>\`
+
+**Game hiện có:**
+• Blue Archive
+
+**Thông tin hiển thị:**
+• Tên nhân vật rate-up
+• Thông tin chi tiết (Role, School, Weapon...)
+• Thời gian còn lại của banner
+• Rate-up: Tỷ lệ nhận character này tăng gấp đôi!
+
+**Banner rotation:**
+• Đổi banner mỗi 24 giờ
+• Mỗi banner là 1 nhân vật SSR ngẫu nhiên
+
+**Ví dụ:**
+• \`/banner blue_archive\` → Xem banner BA hiện tại
+• "⭐ Hoshino - Thời gian còn lại: 15h 30m"`,
   };
 
   // If no command selected, show general help
@@ -218,6 +274,10 @@ Câu cá để kiếm xu! Thu thập đủ 9 loài cá khác nhau!
 **🎁 Kiếm Xu Miễn Phí:**
 • \`/box\` - Mở hộp bí ẩn (8h/lần)
 • \`/cauca\` - Câu cá kiếm xu (90s/lần)
+
+**🎰 Gacha:**
+• \`/gacha\` - Gacha nhân vật (120 xu/10 rolls)
+• \`/banner\` - Xem banner rate-up
 
 **📊 Xếp hạng:**
 • \`/top\` - Xem bảng xếp hạng

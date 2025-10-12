@@ -13,6 +13,8 @@ import { helpCommand } from "./commands/help";
 import { napCommand } from "./commands/nap";
 import { boxCommand } from "./commands/box";
 import { caucaCommand } from "./commands/cauca";
+import { gachaCommand } from "./commands/gacha";
+import { bannerCommand } from "./commands/banner";
 
 const app = new DiscordHono<{ Bindings: Env }>();
 
@@ -28,5 +30,7 @@ app.command("help", helpCommand);
 app.command("nap", napCommand);
 app.command("box", boxCommand);
 app.command("cauca", caucaCommand);
+app.command("gacha", gachaCommand);
+app.command("banner", bannerCommand);
 
 export default app;
