@@ -62,6 +62,11 @@ const commands = [
         { name: "🏇 /duangua - Uma Musume", value: "duangua" },
         { name: "🏆 /top - Bảng xếp hạng", value: "top" }
       )
+  ),
+  
+  new Command("nap", "Nạp xu cho người chơi (Chỉ nhà cái)").options(
+    new Option("user", "Chọn người chơi cần nạp xu", "User").required(),
+    new Option("amount", "Số xu muốn nạp", "Integer").required()
   )
 ];
 

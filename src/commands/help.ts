@@ -171,7 +171,7 @@ Xem bảng xếp hạng top 10 người chơi giàu nhất.
 • \`/help slot\` - Xem hướng dẫn slot machine
 
 `,
-      flags: 64,
+      // flags: 64,
     });
   }
 

@@ -10,6 +10,7 @@ import { slotCommand } from "./commands/slot";
 import { duanguaCommand } from "./commands/duangua";
 import { topCommand } from "./commands/top";
 import { helpCommand } from "./commands/help";
+import { napCommand } from "./commands/nap";
 
 const app = new DiscordHono<{ Bindings: Env }>();
 
@@ -22,5 +23,6 @@ app.command("slot", slotCommand);
 app.command("duangua", duanguaCommand);
 app.command("top", topCommand);
 app.command("help", helpCommand);
+app.command("nap", napCommand);
 
 export default app;
