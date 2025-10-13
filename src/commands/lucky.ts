@@ -21,7 +21,7 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const luckyAmount = Math.floor(Math.random() * 101); // 0-100
+  const luckyAmount = Math.floor(Math.random() * 10001); // 0-10000
   userData.xu += luckyAmount;
   userData.lastLucky = now;
 
