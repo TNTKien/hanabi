@@ -9,7 +9,7 @@ export async function helpCommand(c: CommandContext<{ Bindings: Env }>) {
     return c.res({
       embeds: [{
         title: "🎮 Hướng Dẫn Bot Game",
-        description: "Chọn lệnh bên dưới để xem hướng dẫn chi tiết!",
+        description: "Chọn lệnh từ menu bên dưới để xem hướng dẫn chi tiết!",
         color: 0x5865f2,
         fields: [
           { name: "💰 Quản lý Xu", value: "`/xu` - Xem số xu\n`/lucky` - Nhận xu hàng ngày", inline: true },
@@ -19,8 +19,31 @@ export async function helpCommand(c: CommandContext<{ Bindings: Env }>) {
           { name: "🎰 Gacha System", value: "`/gacha` - Gacha Blue Archive\n`/banner` - Xem banner rate-up", inline: true },
           { name: "📊 Khác", value: "`/top` - Bảng xếp hạng", inline: true }
         ],
-        footer: { text: "Dùng /help <command> để xem chi tiết! Ví dụ: /help gacha" },
+        footer: { text: "Hoặc dùng /help <command> trực tiếp! Ví dụ: /help gacha" },
         timestamp: new Date().toISOString()
+      }],
+      components: [{
+        type: 1, // Action Row
+        components: [{
+          type: 3, // String Select Menu
+          custom_id: "help_select",
+          placeholder: "📖 Chọn lệnh để xem chi tiết...",
+          min_values: 1,
+          max_values: 1,
+          options: [
+            { label: "xu - Xem số xu", value: "xu", emoji: { name: "💰" } },
+            { label: "lucky - Nhận xu hàng ngày", value: "lucky", emoji: { name: "🍀" } },
+            { label: "taixiu - Tài Xỉu", value: "taixiu", emoji: { name: "🎲" } },
+            { label: "baucua - Bầu Cua", value: "baucua", emoji: { name: "🎃" } },
+            { label: "slot - Slot Machine", value: "slot", emoji: { name: "🎰" } },
+            { label: "duangua - Đua Ngựa", value: "duangua", emoji: { name: "🏇" } },
+            { label: "box - Mystery Box", value: "box", emoji: { name: "🎁" } },
+            { label: "cauca - Câu Cá", value: "cauca", emoji: { name: "🎣" } },
+            { label: "gacha - Gacha System", value: "gacha", emoji: { name: "🎰" } },
+            { label: "banner - Rate-Up Banner", value: "banner", emoji: { name: "⭐" } },
+            { label: "top - Bảng Xếp Hạng", value: "top", emoji: { name: "🏆" } }
+          ]
+        }]
       }]
     });
   }
