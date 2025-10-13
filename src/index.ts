@@ -56,12 +56,12 @@ app.component("help_select", async (c) => {
     },
     lucky: {
       title: "🍀 Lệnh /lucky - Nhận xu hàng ngày",
-      description: "Nhận xu miễn phí mỗi ngày (0-100 xu random).",
+      description: "Nhận xu miễn phí mỗi ngày (0-10000 xu random).",
       color: 0x57f287,
       fields: [
         { name: "📝 Cách dùng", value: "`/lucky`" },
         { name: "⏰ Cooldown", value: "24 giờ", inline: true },
-        { name: "💰 Reward", value: "0-100 xu", inline: true }
+        { name: "💰 Reward", value: "0-10000 xu", inline: true }
       ]
     },
     taixiu: {
@@ -73,7 +73,7 @@ app.component("help_select", async (c) => {
         { name: "🎯 Tài (11-17)", value: "Tổng 3 xúc xắc từ 11-17", inline: true },
         { name: "🎯 Xỉu (4-10)", value: "Tổng 3 xúc xắc từ 4-10", inline: true },
         { name: "💎 Thắng", value: "x2 số xu cược", inline: false },
-        { name: "💔 Thua", value: "Mất tiền cược", inline: false }
+        { name: "💔 Thua", value: "Mất tiền cược", inline: true }
       ]
     },
     baucua: {
@@ -93,12 +93,12 @@ app.component("help_select", async (c) => {
       fields: [
         { name: "📝 Cách dùng", value: "`/slot <cuoc>`" },
         { name: "🎰 Jackpots", value: "7️⃣7️⃣7️⃣ = x50 | ⭐⭐⭐ = x20 | 💎💎💎 = x15", inline: false },
-        { name: "💰 Khác", value: "3 giống: x10 | 2x7: x8 | 2⭐: x5", inline: false }
+        { name: "💰 Khác", value: "Chơi đi rồi biết", inline: false }
       ]
     },
     duangua: {
       title: "🏇 Lệnh /duangua - Uma Musume",
-      description: "Đua ngựa với hệ thống 5 stats!",
+      description: "HASHIRE HASHIRE UMAMUSUME 🗣️🗣️",
       color: 0xff69b4,
       fields: [
         { name: "📝 Cách dùng", value: "`/duangua <uma> <cuoc>`" },
@@ -126,14 +126,14 @@ app.component("help_select", async (c) => {
     },
     gacha: {
       title: "🎰 Lệnh /gacha - Gacha System",
-      description: "Gacha để thu thập nhân vật Blue Archive!",
+      description: "Gacha Oaifu, tạm thời có mỗi Bulul Archive",
       color: 0x9b59b6,
       fields: [
         { name: "📝 Cách dùng", value: "`/gacha blue_archive`" },
         { name: "💰 Cost", value: "1,200 xu cho 10 rolls", inline: true },
         { name: "🎯 Guaranteed", value: "Ít nhất 1 SR+", inline: true },
         { name: "📊 Tỷ lệ", value: "🟦 R: 78.5% | 🟨 SR: 18.5% | 🟪 SSR: 1.5%" },
-        { name: "⭐ Rate-Up", value: "Banner character có tỷ lệ x2!" }
+        { name: "⭐ Rate-Up", value: "Nhân vật banner có tỷ lệ x2!" }
       ]
     },
     banner: {
