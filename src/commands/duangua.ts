@@ -171,9 +171,10 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
       // Run the race with 5 stats system
       let round = 0;
       let winner: UmaInfo | null = null;
+      const finishers: UmaInfo[] = []; // Track top 3 finishers
       const isEndGame = () => round >= 25; // Limit to 25 rounds to avoid infinite loop
 
-      while (!winner && !isEndGame()) {
+      while (finishers.length < 3 && !isEndGame()) {
         round++;
 
         for (const uma of umas) {
@@ -205,16 +206,17 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
           const totalMove = Math.max(1, baseMove + powerBoost + staminaPenalty + gutsBoost);
           uma.position += totalMove;
 
-          // Check winner
-          if (uma.position >= FINISH_LINE && !winner) {
-            winner = uma;
+          // Check if uma finished (and not already in finishers)
+          if (uma.position >= FINISH_LINE && !finishers.includes(uma)) {
+            finishers.push(uma);
+            if (!winner) winner = uma; // First finisher is the winner
           }
         }
 
         // Update every 2 rounds
-        if (round % 2 === 0 || winner || isEndGame()) {
+        if (round % 2 === 0 || finishers.length >= 3 || isEndGame()) {
           let updateMsg = `🏇 ĐUA NGỰA - ${
-            winner ? "KẾT THÚC!" : `VÒNG ${round}`
+            finishers.length >= 3 ? "KẾT THÚC!" : `VÒNG ${round}`
           }\n\n`;
           updateMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
           updateMsg += `Tỷ lệ cược: **x${chosenUmaInfo?.multiplier}**\n`;
@@ -237,22 +239,40 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
             updateMsg += `${uma.emoji} ${bar} (${uma.position}) ${staminaIcon}\n`;
           }
 
-          // Add winner info if race ended
-          if (winner) {
-            updateMsg += `\n🏆 **CHIẾN THẮNG: ${winner.emoji} ${winner.name}!**\n\n`;
+          // Add results if race ended (top 3 finished)
+          if (finishers.length >= 3) {
+            updateMsg += `\n**━━━━━ KẾT QUẢ ━━━━━**\n`;
+            updateMsg += `🥇 **1st:** ${finishers[0].emoji} ${finishers[0].name}\n`;
+            updateMsg += `🥈 **2nd:** ${finishers[1].emoji} ${finishers[1].name}\n`;
+            updateMsg += `🥉 **3rd:** ${finishers[2].emoji} ${finishers[2].name}\n\n`;
 
-            const isWin = winner.id === chosenUma;
-
-            if (isWin) {
-              const winAmount = Math.floor(betAmount * winner.multiplier);
+            // Calculate reward based on position
+            const chosenPosition = finishers.findIndex(u => u.id === chosenUma);
+            
+            if (chosenPosition === 0) {
+              // 1st place: Full multiplier
+              const winAmount = Math.floor(betAmount * (chosenUmaInfo?.multiplier || 2));
               userData.xu += winAmount;
-              updateMsg += `**THẮNG!** +${winAmount} xu (x${winner.multiplier})`;
+              updateMsg += `🥇 **THẮNG NHẤT!** +${winAmount} xu (x${chosenUmaInfo?.multiplier})`;
+            } else if (chosenPosition === 1) {
+              // 2nd place: 50% of multiplier
+              const multiplier = (chosenUmaInfo?.multiplier || 2) * 0.5;
+              const winAmount = Math.floor(betAmount * multiplier);
+              userData.xu += winAmount;
+              updateMsg += `🥈 **VỀ NHÌ!** +${winAmount} xu (x${multiplier.toFixed(1)})`;
+            } else if (chosenPosition === 2) {
+              // 3rd place: 25% of multiplier (minimum break even)
+              const multiplier = Math.max(1, (chosenUmaInfo?.multiplier || 2) * 0.25);
+              const winAmount = Math.floor(betAmount * multiplier);
+              userData.xu += winAmount;
+              updateMsg += `🥉 **VỀ BA!** +${winAmount} xu (x${multiplier.toFixed(1)})`;
             } else {
+              // Not in top 3: Lose bet
               userData.xu -= betAmount;
-              updateMsg += `**THUA!** -${betAmount} xu`;
+              updateMsg += `❌ **THUA!** -${betAmount} xu`;
             }
 
-            updateMsg += `\nTổng xu: **${userData.xu} xu**`;
+            updateMsg += `\n💰 Tổng xu: **${userData.xu} xu**`;
 
             // Update username and leaderboard
             const username =
@@ -276,7 +296,7 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
           });
 
           // Small delay for visual effect
-          if (!winner) {
+          if (finishers.length < 3) {
             await new Promise((resolve) => setTimeout(resolve, 800));
           }
         }
@@ -284,7 +304,7 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
         if (round > 30) break;
       }
 
-      if (!winner) {
+      if (finishers.length < 3) {
         await fetch(webhookUrl, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

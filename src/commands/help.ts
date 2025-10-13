@@ -116,6 +116,12 @@ Quay slot machine với 7 biểu tượng khác nhau.
 • Stats cao → Tỷ lệ thấp (x2) - dễ thắng
 • Stats thấp → Tỷ lệ cao (x6) - khó thắng, thưởng lớn
 
+**Phần thưởng:**
+• 🥇 **Về Nhất:** Nhận toàn bộ thưởng
+• 🥈 **Về Nhì:** Nhận 50% thưởng
+• 🥉 **Về Ba:** Nhận 25% thưởng
+• ❌ **Ngoài top 3:** Mất tiền cược
+
 **Thể lực:**
 • 💪 = Khỏe (>50%)
 • 😮 = Mệt (20-50%)
