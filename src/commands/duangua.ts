@@ -253,7 +253,7 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
               // 1st place: Full multiplier
               const winAmount = Math.floor(betAmount * (chosenUmaInfo?.multiplier || 2));
               userData.xu += winAmount;
-              updateMsg += `🥇 **THẮNG NHẤT!** +${winAmount} xu (x${chosenUmaInfo?.multiplier})`;
+              updateMsg += `🥇 **VỀ NHẤT!** +${winAmount} xu (x${chosenUmaInfo?.multiplier})`;
             } else if (chosenPosition === 1) {
               // 2nd place: 50% of multiplier
               const multiplier = (chosenUmaInfo?.multiplier || 2) * 0.5;
