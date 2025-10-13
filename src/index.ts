@@ -72,8 +72,8 @@ app.component("help_select", async (c) => {
         { name: "📝 Cách dùng", value: "`/taixiu <chon> <cuoc>`" },
         { name: "🎯 Tài (11-17)", value: "Tổng 3 xúc xắc từ 11-17", inline: true },
         { name: "🎯 Xỉu (4-10)", value: "Tổng 3 xúc xắc từ 4-10", inline: true },
-        { name: "💎 Thắng", value: "x2 số xu cược", inline: true },
-        { name: "💔 Thua", value: "Mất tiền cược", inline: true }
+        { name: "💎 Thắng", value: "x2 số xu cược", inline: false },
+        { name: "💔 Thua", value: "Mất tiền cược", inline: false }
       ]
     },
     baucua: {
@@ -92,8 +92,8 @@ app.component("help_select", async (c) => {
       color: 0xeb459e,
       fields: [
         { name: "📝 Cách dùng", value: "`/slot <cuoc>`" },
-        { name: "🎰 Jackpots", value: "7️⃣7️⃣7️⃣ = x50 | ⭐⭐⭐ = x20 | 💎💎💎 = x15", inline: true },
-        { name: "💰 Khác", value: "3 giống: x10 | 2x7: x8 | 2⭐: x5", inline: true }
+        { name: "🎰 Jackpots", value: "7️⃣7️⃣7️⃣ = x50 | ⭐⭐⭐ = x20 | 💎💎💎 = x15", inline: false },
+        { name: "💰 Khác", value: "3 giống: x10 | 2x7: x8 | 2⭐: x5", inline: false }
       ]
     },
     duangua: {
