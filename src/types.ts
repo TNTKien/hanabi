@@ -36,6 +36,7 @@ export interface GachaBanner {
 export interface Env {
   GAME_DB: KVNamespace;
   DISCORD_APPLICATION_ID: string;
+  DISCORD_TOKEN?: string;
 }
 
 export const HOUSE_USER_ID = "559979358404608001";

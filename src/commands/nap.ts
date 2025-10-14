@@ -3,6 +3,7 @@ import type { Env } from "../types";
 import { HOUSE_USER_ID } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -42,6 +43,8 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
   // Update username and save
   await saveUserData(targetUserId, targetUserData, c.env.GAME_DB);
   await updateLeaderboard(targetUserId, targetUsername, targetUserData.xu, c.env.GAME_DB);
+
+  await sendCommandLog(c.env, c.interaction.member?.user.username || c.interaction.user?.username || "Unknown", userId, `/nap ${targetUserId} ${amount}`, `old=${oldBalance}, new=${targetUserData.xu}`);
 
   return c.res({
     content: `✅ **NẠP XU THÀNH CÔNG**

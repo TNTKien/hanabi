@@ -2,6 +2,7 @@ import type { CommandContext } from "discord-hono";
 import type { Env, BACharacter } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 import baCharacters from "../data/ba-characters.json";
 
 const GACHA_COSTS: Record<string, number> = {
@@ -244,7 +245,6 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
     output += `\n\n🎉 **CHÚC MỪNG! Bạn đã có ${ssrCount} SSR!** 🎉`;
   }
 
-  return c.res({
-    content: output,
-  });
+  await sendCommandLog(c.env, username, userId, `/gacha ${game}`, `ssr=${ssrCount}; balance=${userData.xu}`);
+  return c.res({ content: output });
 }

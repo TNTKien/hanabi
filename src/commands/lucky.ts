@@ -2,6 +2,7 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -36,7 +37,7 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
   await saveUserData(userId, userData, c.env.GAME_DB);
   await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
 
-  return c.res({
-    content: `🍀 Lucky! Bạn nhận được **${luckyAmount} xu**\nTổng xu: **${userData.xu} xu**`,
-  });
+  const result = `🍀 Lucky! Bạn nhận được **${luckyAmount} xu**\nTổng xu: **${userData.xu} xu**`;
+  await sendCommandLog(c.env, username, userId, "/lucky", `got=${luckyAmount}, total=${userData.xu}`);
+  return c.res({ content: result });
 }

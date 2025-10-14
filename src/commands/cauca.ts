@@ -2,6 +2,7 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 const FISH_TYPES = [
   // Common (70%)
@@ -108,7 +109,6 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
     resultMessage += `\n\n🎉 **CHÚC MỪNG! Bạn đã câu được cá huyền thoại!** 🎉`;
   }
 
-  return c.res({
-    content: resultMessage,
-  });
+  await sendCommandLog(c.env, username, userId, "/cauca", `${caught.name} (${caught.rarity}) +${caught.xu} xu`);
+  return c.res({ content: resultMessage });
 }

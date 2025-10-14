@@ -1,6 +1,7 @@
 import type { CommandContext } from "discord-hono";
 import type { Env, BACharacter } from "../types";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 import baCharacters from "../data/ba-characters.json";
 
 // Get current banner character (same logic as gacha.ts)
@@ -76,7 +77,6 @@ export async function bannerCommand(c: CommandContext<{ Bindings: Env }>) {
   output += `✨ **Rate-Up:** Tỷ lệ nhận được ${bannerCharacter.name} tăng gấp đôi!\n`;
   output += `💰 Cost: **1,200 xu** cho 10 rolls (guaranteed SR+)`;
 
-  return c.res({
-    content: output,
-  });
+  await sendCommandLog(c.env, c.interaction.member?.user.username || c.interaction.user?.username || "Unknown", c.interaction.member?.user.id || c.interaction.user?.id, "/banner", `banner=${bannerCharacter.name}`);
+  return c.res({ content: output });
 }
