@@ -17,7 +17,13 @@ export async function sendCommandLog(env: Env, username: string | undefined, use
     const token = env.DISCORD_TOKEN;
     if (!token) return; // no token available, skip logging
 
-    const content = `User: ${username || "Unknown"} (${userId || "-"})\nCommand: ${command}\nResult: ${result ? result : "(none)"}`;
+    const lines = [];
+    lines.push(`User: ${safeString(username) } (${safeString(userId)})`);
+    lines.push(`Command: ${safeString(command)}`);
+    lines.push(`Result: ${safeString(result ?? "(none)")}`);
+
+    // Wrap message in a code block for readability and add a visible separator after it
+    const content = "```" + "\n" + lines.join("\n") + "\n```\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
     await fetch(`https://discord.com/api/v10/channels/${LOG_CHANNEL_ID}/messages`, {
       method: "POST",
