@@ -2,9 +2,11 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { HOUSE_USER_ID } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 
 export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
+  if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Unable to identify user!");
 
   // Check if user is the house (only house can use this command)

@@ -39,3 +39,4 @@ export interface Env {
 }
 
 export const HOUSE_USER_ID = "559979358404608001";
+export const BLACKLISTED_USER_IDS = ["743400624422387772"];

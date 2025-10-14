@@ -1,6 +1,7 @@
 import type { CommandContext } from "discord-hono";
 import type { Env, BACharacter } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import baCharacters from "../data/ba-characters.json";
 
 const GACHA_COSTS: Record<string, number> = {
@@ -175,6 +176,7 @@ function formatResults(results: BACharacter[], bannerCharacter: BACharacter | nu
 
 export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
+  if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
