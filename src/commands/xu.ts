@@ -2,6 +2,7 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 export async function xuCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -21,8 +22,8 @@ export async function xuCommand(c: CommandContext<{ Bindings: Env }>) {
     await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
   }
 
-  return c.res({
-    content: `Bạn hiện có **${userData.xu} xu**`,
-    flags: 64, // Ephemeral
-  });
+  const resp = { content: `Bạn hiện có **${userData.xu} xu**`, flags: 64 };
+  // Log command
+  await sendCommandLog(c.env, username, userId, "/xu", `xu=${userData.xu}`);
+  return c.res(resp);
 }

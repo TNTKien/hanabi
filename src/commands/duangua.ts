@@ -2,6 +2,7 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 interface UmaStats {
   speed: number;      // 🏃‍♀️ Maximum speed (400-1200)
@@ -147,6 +148,16 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
   // Run race in background (no await)
+  // Log invocation
+  (async () => {
+    try {
+      const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
+      await sendCommandLog(c.env, username, userId, `/duangua ${chosenUma} ${betAmount}`, "started");
+    } catch (e) {
+      /* ignore */
+    }
+  })();
+
   c.executionCtx.waitUntil(
     (async () => {
       // Initial message with stats
@@ -289,6 +300,14 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
               userData.xu,
               c.env.GAME_DB
             );
+            // Send final command log
+            try {
+              const chosenName = chosenUmaInfo?.name || chosenUma || "-";
+              const finalResult = `winner=${winner?.name || "-"}; balance=${userData.xu}`;
+              await sendCommandLog(c.env, username, userId, `/duangua ${chosenName} ${betAmount}`, finalResult);
+            } catch (e) {
+              /* ignore */
+            }
           }
 
           await fetch(webhookUrl, {

@@ -1,14 +1,17 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 export async function helpCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
+  const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
   // @ts-ignore - Get command from interaction options
   const command = c.interaction?.data?.options?.find(
     (opt: any) => opt.name === "command"
   )?.value as string | undefined;
+  await sendCommandLog(c.env, username, userId, "/help", command ? `help ${command}` : "invoked");
 
   if (!command) {
     return c.res({

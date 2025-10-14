@@ -2,10 +2,13 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { getUserData, getTopUsers } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 export async function topCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
+  const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
+  await sendCommandLog(c.env, username, userId, "/top", "invoked");
   const topUsers = await getTopUsers(c.env.GAME_DB, 10);
 
   if (topUsers.length === 0) {

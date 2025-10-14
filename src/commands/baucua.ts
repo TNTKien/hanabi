@@ -2,6 +2,7 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -77,7 +78,6 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
   await saveUserData(userId, userData, c.env.GAME_DB);
   await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
 
-  return c.res({
-    content: resultText,
-  });
+  await sendCommandLog(c.env, username, userId, "/baucua", resultText);
+  return c.res({ content: resultText });
 }

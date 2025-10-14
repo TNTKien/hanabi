@@ -2,6 +2,7 @@ import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
+import { sendCommandLog } from "../utils/logger";
 
 export async function boxCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -65,7 +66,7 @@ export async function boxCommand(c: CommandContext<{ Bindings: Env }>) {
   await saveUserData(userId, userData, kv);
   await updateLeaderboard(userId, username, userData.xu, kv);
 
-  return c.res({
-    content: `🎁 **Mystery Box**\n\n${result}\n\n💰 Số xu hiện tại: **${userData.xu} xu**${specialBuff ? '\n🔥 Buff x2 đang active!' : ''}`,
-  });
+  const out = `🎁 **Mystery Box**\n\n${result}\n\n💰 Số xu hiện tại: **${userData.xu} xu**${specialBuff ? '\n🔥 Buff x2 đang active!' : ''}`;
+  await sendCommandLog(c.env, username, userId, "/box", result + ` | balance=${userData.xu}`);
+  return c.res({ content: out });
 }
