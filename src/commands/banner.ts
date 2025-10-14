@@ -1,5 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env, BACharacter } from "../types";
+import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import baCharacters from "../data/ba-characters.json";
 
 // Get current banner character (same logic as gacha.ts)
@@ -41,6 +42,8 @@ async function getCurrentBanner(kv: KVNamespace, game: string): Promise<BACharac
 }
 
 export async function bannerCommand(c: CommandContext<{ Bindings: Env }>) {
+  const userId = c.interaction.member?.user.id || c.interaction.user?.id;
+  if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   const kv = c.env.GAME_DB;
 
   // @ts-ignore - get game option

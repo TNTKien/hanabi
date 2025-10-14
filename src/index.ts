@@ -1,5 +1,6 @@
 import { DiscordHono } from "discord-hono";
 import type { Env } from "./types";
+import { isBlacklisted, blacklistedResponse } from "./utils/blacklist";
 
 // Import commands
 import { xuCommand } from "./commands/xu";
@@ -35,6 +36,8 @@ app.command("banner", bannerCommand);
 
 // Handle component interactions (Select Menu)
 app.component("help_select", async (c) => {
+  const userId = c.interaction.member?.user.id || c.interaction.user?.id;
+  if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   // Get selected value from interaction
   // @ts-ignore - Discord string select interaction
   const selectedCommand = c.interaction?.data?.values?.[0] as string;
