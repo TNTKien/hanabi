@@ -3,6 +3,7 @@ import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
+import { validateBetAmount, calculateWinAmount, updateUserXu, updateUserXuOnLoss } from "../utils/validation";
 
 export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -14,18 +15,20 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
   // @ts-ignore
   const betAmount = parseInt(c.get("cuoc") as string);
 
-  if (!choice || !betAmount || betAmount < 1 || isNaN(betAmount)) {
+  if (!choice) {
     return c.res({
-      content: "❌ Vui lòng nhập đúng thông tin!",
+      content: "❌ Vui lòng chọn con vật!",
       flags: 64,
     });
   }
 
   const userData = await getUserData(userId, c.env.GAME_DB);
 
-  if (userData.xu < betAmount) {
+  // Validate bet amount
+  const validation = validateBetAmount(betAmount, userData.xu, 1);
+  if (!validation.valid) {
     return c.res({
-      content: `Bạn không đủ xu!`,
+      content: validation.error,
       flags: 64,
     });
   }
@@ -59,15 +62,42 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
   resultText += `Bạn chọn: ${animalEmojis[choice]} ${animalNames[choice]}\n\n`;
 
   if (matches === 0) {
-    userData.xu -= betAmount;
-    resultText += `**THUA!** -${betAmount} xu`;
+    // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
+    const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
+    userData.xu = lossUpdate.newXu;
+    
+    if (lossUpdate.actualLoss < betAmount) {
+      resultText += `**THUA!** -${lossUpdate.actualLoss.toLocaleString()} xu (Hết xu!)`;
+    } else {
+      resultText += `**THUA!** -${betAmount.toLocaleString()} xu`;
+    }
   } else {
-    const winAmount = betAmount * matches;
-    userData.xu += winAmount;
-    resultText += `**THẮNG ${matches}x!** +${winAmount} xu`;
+    // House edge: Giảm multiplier xuống 0.9x cho mỗi match
+    const multiplier = matches * 0.9; // 0.9x, 1.8x, 2.7x thay vì 1x, 2x, 3x
+    const winCalc = calculateWinAmount(betAmount, multiplier);
+    
+    if (!winCalc.success) {
+      return c.res({
+        content: winCalc.error + "\n⚠️ Vui lòng giảm số xu cược!",
+        flags: 64,
+      });
+    }
+    
+    const winAmount = winCalc.amount!;
+    const xuUpdate = updateUserXu(userData.xu, winAmount);
+    
+    if (!xuUpdate.success) {
+      return c.res({
+        content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!",
+        flags: 64,
+      });
+    }
+    
+    userData.xu = xuUpdate.newXu!;
+    resultText += `**THẮNG ${matches}x!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
   }
 
-  resultText += `\nTổng xu: **${userData.xu} xu**`;
+  resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;
 
   // Update username and leaderboard
   const username =

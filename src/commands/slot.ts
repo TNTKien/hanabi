@@ -3,6 +3,12 @@ import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
+import {
+  validateBetAmount,
+  calculateWinAmount,
+  updateUserXu,
+  updateUserXuOnLoss,
+} from "../utils/validation";
 
 export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -12,19 +18,13 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   // @ts-ignore
   const betAmount = parseInt(c.get("cuoc") as string);
 
-  // Tăng mức cược tối thiểu để tránh spam
-  if (!betAmount || betAmount < 100 || isNaN(betAmount)) {
-    return c.res({
-      content: "❌ Vui lòng nhập số xu hợp lệ! (Tối thiểu 100 xu)",
-      flags: 64,
-    });
-  }
-
   const userData = await getUserData(userId, c.env.GAME_DB);
 
-  if (userData.xu < betAmount) {
+  // Validate bet amount với mức tối thiểu 100 xu cho slot
+  const validation = validateBetAmount(betAmount, userData.xu, 1000);
+  if (!validation.valid) {
     return c.res({
-      content: `❌ Bạn không đủ xu! (Có: **${userData.xu} xu**)`,
+      content: validation.error,
       flags: 64,
     });
   }
@@ -96,15 +96,40 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   }
 
   if (multiplier > 0) {
-    winAmount = Math.floor(betAmount * multiplier);
-    userData.xu += winAmount;
-    resultText += `**+${winAmount} xu** (x${multiplier})\n`;
+    const winCalc = calculateWinAmount(betAmount, multiplier);
+    
+    if (!winCalc.success) {
+      return c.res({
+        content: winCalc.error + "\n⚠️ Vui lòng giảm số xu cược!",
+        flags: 64,
+      });
+    }
+    
+    winAmount = winCalc.amount!;
+    
+    const xuUpdate = updateUserXu(userData.xu, winAmount);
+    if (!xuUpdate.success) {
+      return c.res({
+        content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!",
+        flags: 64,
+      });
+    }
+    
+    userData.xu = xuUpdate.newXu!;
+    resultText += `**+${winAmount.toLocaleString()} xu** (x${multiplier})\n`;
   } else {
-    userData.xu -= betAmount;
-    resultText += `**THUA!** -${betAmount} xu\n`;
+    // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
+    const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
+    userData.xu = lossUpdate.newXu;
+    
+    if (lossUpdate.actualLoss < betAmount) {
+      resultText += `**THUA!** -${lossUpdate.actualLoss.toLocaleString()} xu (Hết xu!)\n`;
+    } else {
+      resultText += `**THUA!** -${betAmount.toLocaleString()} xu\n`;
+    }
   }
 
-  resultText += `\nTổng xu: **${userData.xu} xu**`;
+  resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;
 
   // Update username and leaderboard
   const username =

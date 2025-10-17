@@ -3,6 +3,7 @@ import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard, rollDice } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
+import { validateBetAmount, updateUserXu, updateUserXuOnLoss } from "../utils/validation";
 
 export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -14,18 +15,20 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
   // @ts-ignore
   const betAmount = parseInt(c.get("cuoc") as string);
 
-  if (!choice || !betAmount || betAmount < 1 || isNaN(betAmount)) {
+  if (!choice) {
     return c.res({
-      content: "❌ Vui lòng nhập đúng thông tin!",
+      content: "❌ Vui lòng chọn Tài hoặc Xỉu!",
       flags: 64,
     });
   }
 
   const userData = await getUserData(userId, c.env.GAME_DB);
 
-  if (userData.xu < betAmount) {
+  // Validate bet amount
+  const validation = validateBetAmount(betAmount, userData.xu, 1);
+  if (!validation.valid) {
     return c.res({
-      content: `Bạn không đủ xu!`,
+      content: validation.error,
       flags: 64,
     });
   }
@@ -43,14 +46,30 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
   resultText += `${isTai ? "**TÀI**" : "**XỈU**"}\n\n`;
 
   if (isWin) {
-    userData.xu += betAmount;
-    resultText += `**THẮNG!** +${betAmount} xu`;
+    // House edge: Thắng chỉ nhận 95% tiền cược
+    const winAmount = Math.floor(betAmount * 0.95);
+    const xuUpdate = updateUserXu(userData.xu, winAmount);
+    if (!xuUpdate.success) {
+      return c.res({
+        content: xuUpdate.error,
+        flags: 64,
+      });
+    }
+    userData.xu = xuUpdate.newXu!;
+    resultText += `**THẮNG!** +${winAmount.toLocaleString()} xu (x0.95)`;
   } else {
-    userData.xu -= betAmount;
-    resultText += `**THUA!** -${betAmount} xu`;
+    // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
+    const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
+    userData.xu = lossUpdate.newXu;
+    
+    if (lossUpdate.actualLoss < betAmount) {
+      resultText += `**THUA!** -${lossUpdate.actualLoss.toLocaleString()} xu (Hết xu!)`;
+    } else {
+      resultText += `**THUA!** -${betAmount.toLocaleString()} xu`;
+    }
   }
 
-  resultText += `\nTổng xu: **${userData.xu} xu**`;
+  resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;
 
   // Update username and leaderboard
   const username =

@@ -1,4 +1,5 @@
 import type { UserData } from "../types";
+import { capXu } from "./validation";
 
 export async function getUserData(
   userId: string,
@@ -16,6 +17,8 @@ export async function saveUserData(
   data: UserData,
   kv: KVNamespace
 ) {
+  // Cap xu at maximum before saving
+  data.xu = capXu(data.xu);
   await kv.put(`user:${userId}`, JSON.stringify(data));
 }
 

@@ -3,6 +3,7 @@ import type { Env } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
+import { updateUserXu } from "../utils/validation";
 
 const FISH_TYPES = [
   // Common (70%)
@@ -86,8 +87,16 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
   }
   userData.fishCollection[caught.name]++;
 
-  // Update user data
-  userData.xu += caught.xu;
+  // Update user data with safety check
+  const xuUpdate = updateUserXu(userData.xu, caught.xu);
+  if (!xuUpdate.success) {
+    return c.res({
+      content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!",
+      flags: 64,
+    });
+  }
+  
+  userData.xu = xuUpdate.newXu!;
   userData.lastFish = now;
 
   await saveUserData(userId, userData, kv);
@@ -100,8 +109,8 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
   let resultMessage = `🎣 **Câu Cá**\n\n`;
   resultMessage += `${rarityEmoji} Bạn câu được: **${caught.name}**\n`;
   resultMessage += `✨ Độ hiếm: **${caught.rarity}**\n`;
-  resultMessage += `💰 Nhận được: **+${caught.xu} xu**\n\n`;
-  resultMessage += `💵 Số xu hiện tại: **${userData.xu} xu**\n`;
+  resultMessage += `💰 Nhận được: **+${caught.xu.toLocaleString()} xu**\n\n`;
+  resultMessage += `💵 Số xu hiện tại: **${userData.xu.toLocaleString()} xu**\n`;
   resultMessage += `📊 Bộ sưu tập: **${uniqueFish}/${FISH_TYPES.length}** loài (${totalFish} con)`;
 
   // Special message for legendary catch
