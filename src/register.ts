@@ -51,11 +51,17 @@ const commands = [
   
   new Command("xu", "Xem số xu hiện tại của bạn"),
   
+  new Command("chuyenxu", "Chuyển xu cho người chơi khác").options(
+    new Option("nguoi_nhan", "Chọn người nhận xu", "User").required(),
+    new Option("so_xu", "Số xu muốn chuyển (tối thiểu 100 xu)", "Integer").required()
+  ),
+  
   new Command("help", "Hướng dẫn sử dụng bot").options(
     new Option("command", "Chọn lệnh để xem hướng dẫn")
       .choices(
         { name: "💰 /xu - Xem số xu", value: "xu" },
         { name: "🍀 /lucky - Nhận xu hàng ngày", value: "lucky" },
+        { name: "💸 /chuyenxu - Chuyển xu", value: "chuyenxu" },
         { name: "🎲 /taixiu - Game tài xỉu", value: "taixiu" },
         { name: "🎃 /baucua - Game bầu cua", value: "baucua" },
         { name: "🎰 /slot - Game slot", value: "slot" },

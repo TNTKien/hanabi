@@ -23,7 +23,7 @@ export async function helpCommand(c: CommandContext<{ Bindings: Env }>) {
           fields: [
             {
               name: "💰 Quản lý Xu",
-              value: "`/xu` - Xem số xu\n`/lucky` - Nhận xu hàng ngày",
+              value: "`/xu` - Xem số xu\n`/lucky` - Nhận xu hàng ngày\n`/chuyenxu` - Chuyển xu",
               inline: true,
             },
             {
@@ -117,6 +117,11 @@ export async function helpCommand(c: CommandContext<{ Bindings: Env }>) {
                   label: "top - Bảng Xếp Hạng",
                   value: "top",
                   emoji: { name: "🏆" },
+                },
+                {
+                  label: "chuyenxu - Chuyển xu",
+                  value: "chuyenxu",
+                  emoji: { name: "💸" },
                 },
               ],
             },
@@ -269,6 +274,18 @@ export async function helpCommand(c: CommandContext<{ Bindings: Env }>) {
       fields: [
         { name: "📝 Cách dùng", value: "`/top`" },
         { name: "🏅 Huy chương", value: "🥇 Hạng 1 | 🥈 Hạng 2 | 🥉 Hạng 3" },
+      ],
+    },
+    chuyenxu: {
+      title: "💸 Lệnh /chuyenxu - Transfer",
+      description: "Chuyển xu cho người chơi khác!",
+      color: 0x2ecc71,
+      fields: [
+        { name: "📝 Cách dùng", value: "`/chuyenxu <người_nhận> <số_xu>`" },
+        { name: "💰 Tối thiểu", value: "100 xu", inline: true },
+        { name: "💰 Tối đa", value: "100,000,000 xu", inline: true },
+        { name: "📖 Ví dụ", value: "`/chuyenxu @friend 5000` → Chuyển 5,000 xu cho friend" },
+        { name: "⚠️ Lưu ý", value: "• Không thể chuyển cho chính mình\n• Không thể chuyển cho người bị blacklist\n• Người nhận không được vượt quá giới hạn xu" },
       ],
     },
   };

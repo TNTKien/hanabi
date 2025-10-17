@@ -16,6 +16,7 @@ import { boxCommand } from "./commands/box";
 import { caucaCommand } from "./commands/cauca";
 import { gachaCommand } from "./commands/gacha";
 import { bannerCommand } from "./commands/banner";
+import { chuyenxuCommand } from "./commands/chuyenxu";
 
 const app = new DiscordHono<{ Bindings: Env }>();
 
@@ -33,6 +34,7 @@ app.command("box", boxCommand);
 app.command("cauca", caucaCommand);
 app.command("gacha", gachaCommand);
 app.command("banner", bannerCommand);
+app.command("chuyenxu", chuyenxuCommand);
 
 // Handle component interactions (Select Menu)
 app.component("help_select", async (c) => {
@@ -156,6 +158,17 @@ app.component("help_select", async (c) => {
       fields: [
         { name: "📝 Cách dùng", value: "`/top`" },
         { name: "🏅 Huy chương", value: "🥇 Hạng 1 | 🥈 Hạng 2 | 🥉 Hạng 3" }
+      ]
+    },
+    chuyenxu: {
+      title: "💸 Lệnh /chuyenxu - Transfer",
+      description: "Chuyển xu cho người chơi khác!",
+      color: 0x2ecc71,
+      fields: [
+        { name: "📝 Cách dùng", value: "`/chuyenxu <người_nhận> <số_xu>`" },
+        { name: "💰 Tối thiểu", value: "100 xu", inline: true },
+        { name: "💰 Tối đa", value: "100,000,000 xu", inline: true },
+        { name: "⚠️ Lưu ý", value: "• Không thể chuyển cho chính mình\n• Không thể chuyển cho người bị blacklist\n• Người nhận không được vượt quá giới hạn xu" }
       ]
     }
   };
