@@ -12,9 +12,10 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   // @ts-ignore
   const betAmount = parseInt(c.get("cuoc") as string);
 
-  if (!betAmount || betAmount < 1 || isNaN(betAmount)) {
+  // Tăng mức cược tối thiểu để tránh spam
+  if (!betAmount || betAmount < 100 || isNaN(betAmount)) {
     return c.res({
-      content: "❌ Vui lòng nhập số xu hợp lệ!",
+      content: "❌ Vui lòng nhập số xu hợp lệ! (Tối thiểu 100 xu)",
       flags: 64,
     });
   }
@@ -28,8 +29,10 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const symbols = ["🍒", "🍋", "🍊", "🍇", "💎", "⭐", "7️⃣"];
-  const weights = [25, 20, 20, 15, 10, 8, 2];
+  // Thêm nhiều symbol hơn để tăng độ khó
+  const symbols = ["🍒", "🍋", "🍊", "🍇", "🍉", "🍓", "🍌", "💎", "⭐", "7️⃣"];
+  // Giảm mạnh tỷ lệ xuất hiện kim cương và sao, thêm symbols thường
+  const weights = [18, 16, 15, 14, 13, 12, 10, 1, 0.5, 0.5];
 
   const rollSymbol = () => {
     const total = weights.reduce((a, b) => a + b, 0);
@@ -53,18 +56,19 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   let multiplier = 0;
 
   if (slot1 === slot2 && slot2 === slot3) {
+    // Giữ nguyên mức phần thưởng như cũ
     if (slot1 === "7️⃣") {
       multiplier = 50; // JACKPOT!
-      resultText += `**JACKPOT! 7-7-7!**\n`;
+      resultText += `**🎉 JACKPOT! 7-7-7!**\n`;
     } else if (slot1 === "⭐") {
       multiplier = 20;
-      resultText += `**SUPER WIN!**\n`;
+      resultText += `**⭐ SUPER WIN!**\n`;
     } else if (slot1 === "💎") {
       multiplier = 15;
-      resultText += `**MEGA WIN!**\n`;
+      resultText += `**💎 MEGA WIN!**\n`;
     } else {
       multiplier = 10;
-      resultText += `**BIG WIN! 3 giống nhau!**\n`;
+      resultText += `**🎊 BIG WIN! 3 giống nhau!**\n`;
     }
   } else if (slot1 === slot2 || slot2 === slot3 || slot1 === slot3) {
     const matchSymbol =
@@ -72,13 +76,13 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
 
     if (matchSymbol === "7️⃣") {
       multiplier = 8;
-      resultText += `**GREAT! 2 số 7!**\n`;
+      resultText += `**7️⃣ GREAT! 2 số 7!**\n`;
     } else if (matchSymbol === "⭐") {
       multiplier = 5;
-      resultText += `**WIN! 2 sao!**\n`;
+      resultText += `**⭐ WIN! 2 sao!**\n`;
     } else if (matchSymbol === "💎") {
       multiplier = 4;
-      resultText += `**WIN! 2 kim cương!**\n`;
+      resultText += `**💎 WIN! 2 kim cương!**\n`;
     } else {
       multiplier = 3;
       resultText += `**WIN! 2 giống nhau!**\n`;
