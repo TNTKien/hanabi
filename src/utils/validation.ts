@@ -23,10 +23,13 @@ export function isSafeNumber(num: number): boolean {
 
 /**
  * Cộng hai số một cách an toàn, trả về null nếu overflow
+ * Hỗ trợ cả số nguyên và số thập phân
  */
 export function safeAdd(a: number, b: number): number | null {
   const result = a + b;
-  if (!isSafeNumber(result)) {
+  // Check if result is finite and not too large
+  // Allow decimal numbers, just check if they're within safe range
+  if (!Number.isFinite(result) || Math.abs(result) > MAX_SAFE_INTEGER) {
     return null;
   }
   return result;
@@ -34,10 +37,13 @@ export function safeAdd(a: number, b: number): number | null {
 
 /**
  * Nhân hai số một cách an toàn, trả về null nếu overflow
+ * Hỗ trợ cả số nguyên và số thập phân (ví dụ: multiplier 0.5, 1.5, 2.7)
  */
 export function safeMultiply(a: number, b: number): number | null {
   const result = a * b;
-  if (!isSafeNumber(result)) {
+  // Check if result is finite and not too large
+  // Allow decimal numbers, just check if they're within safe range
+  if (!Number.isFinite(result) || Math.abs(result) > MAX_SAFE_INTEGER) {
     return null;
   }
   return result;
@@ -107,6 +113,8 @@ export function validateBetAmount(
 
 /**
  * Tính toán tiền thắng một cách an toàn
+ * Hỗ trợ multiplier thập phân (0.5, 0.9, 1.5, v.v.)
+ * Kết quả luôn được làm tròn xuống thành số nguyên
  */
 export function calculateWinAmount(
   betAmount: number,
@@ -125,6 +133,7 @@ export function calculateWinAmount(
     };
   }
 
+  // Luôn trả về số nguyên (làm tròn xuống)
   return {
     success: true,
     amount: Math.floor(result),
