@@ -202,7 +202,7 @@ export async function helpCommand(c: CommandContext<{ Bindings: Env }>) {
     },
     duangua: {
       title: "🏇 Lệnh /duangua - Uma Musume",
-      description: "Đua ngựa với hệ thống 5 stats!",
+      description: "HASHIRE HASHIRE UMAMUSUME 🗣️🗣️",
       color: 0xff69b4,
       fields: [
         { name: "📝 Cách dùng", value: "`/duangua <uma> <cuoc>`" },
