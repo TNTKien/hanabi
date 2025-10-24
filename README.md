@@ -21,6 +21,14 @@ DISCORD_PUBLIC_KEY=your_public_key
 wrangler login
 wrangler kv:namespace create "GAME_DB"
 ```
+
+## Environment Variables (wrangler.jsonc)
+
+Configure these variables in `wrangler.jsonc` under the `vars` section:
+
+- `LOG_GUILD_ID`: Discord server ID for logging
+- `LOG_CHANNEL_ID`: Discord channel ID for command logs
+- `HOUSE_USER_ID`: Discord user ID of the house/banker (for /nap command)
 ## Register commands
 
 ```bash

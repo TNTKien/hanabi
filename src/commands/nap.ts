@@ -1,6 +1,5 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { HOUSE_USER_ID } from "../types";
 import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
@@ -10,8 +9,16 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Unable to identify user!");
 
+  const houseUserId = c.env.HOUSE_USER_ID;
+  if (!houseUserId) {
+    return c.res({
+      content: "❌ Cấu hình HOUSE_USER_ID chưa được thiết lập!",
+      flags: 64,
+    });
+  }
+
   // Check if user is the house (only house can use this command)
-  if (userId !== HOUSE_USER_ID) {
+  if (userId !== houseUserId) {
     return c.res({
       content: "❌ Bạn không có quyền sử dụng lệnh này!\nChỉ nhà cái mới có thể nạp xu.",
       flags: 64, // Ephemeral

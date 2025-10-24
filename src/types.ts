@@ -37,7 +37,7 @@ export interface Env {
   GAME_DB: KVNamespace;
   DISCORD_APPLICATION_ID: string;
   DISCORD_TOKEN?: string;
+  LOG_GUILD_ID?: string;
+  LOG_CHANNEL_ID?: string;
+  HOUSE_USER_ID?: string;
 }
-
-export const HOUSE_USER_ID = "559979358404608001";
-export const BLACKLISTED_USER_IDS = ["743400624422387772"];

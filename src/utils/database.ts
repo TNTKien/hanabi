@@ -56,10 +56,8 @@ export function rollDice(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
 
-export async function transferToHouse(amount: number, kv: KVNamespace) {
-  const houseData = await getUserData(HOUSE_USER_ID, kv);
+export async function transferToHouse(amount: number, kv: KVNamespace, houseUserId: string) {
+  const houseData = await getUserData(houseUserId, kv);
   houseData.xu += amount;
-  await saveUserData(HOUSE_USER_ID, houseData, kv);
+  await saveUserData(houseUserId, houseData, kv);
 }
-
-const HOUSE_USER_ID = "559979358404608001";

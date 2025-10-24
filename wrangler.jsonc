@@ -38,7 +38,11 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 */
-	// "vars": { "MY_VARIABLE": "production_value" }
+	"vars": {
+		"LOG_GUILD_ID": "889490582072873001",
+		"LOG_CHANNEL_ID": "1427562008747835422",
+		"HOUSE_USER_ID": "559979358404608001"
+	}
 	/**
 	 * Note: Use secrets to store sensitive data.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
