@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, saveUserData, updateLeaderboard, rollDice } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard, rollDice } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 import { validateBetAmount, updateUserXu, updateUserXuOnLoss } from "../utils/validation";
@@ -22,7 +22,7 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const userData = await getUserData(userId, c.env.GAME_DB);
+  const userData = await getUserData(userId, db);
 
   // Validate bet amount
   const validation = validateBetAmount(betAmount, userData.xu, 1);
@@ -77,8 +77,8 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
     c.interaction.user?.username ||
     "Unknown";
   userData.username = username;
-  await saveUserData(userId, userData, c.env.GAME_DB);
-  await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
+  await saveUserData(userId, userData, db);
+  await updateLeaderboard(userId, username, userData.xu, db);
 
   await sendCommandLog(c.env, username, userId, "/taixiu", resultText);
   return c.res({ content: resultText });

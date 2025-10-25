@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 
@@ -38,7 +38,7 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
   }
 
   // Get target user data
-  const targetUserData = await getUserData(targetUserId, c.env.GAME_DB);
+  const targetUserData = await getUserData(targetUserId, db);
   const oldBalance = targetUserData.xu;
   
   // Add xu to target user
@@ -48,8 +48,8 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
   const targetUsername = targetUserData.username || "Unknown User";
   
   // Update username and save
-  await saveUserData(targetUserId, targetUserData, c.env.GAME_DB);
-  await updateLeaderboard(targetUserId, targetUsername, targetUserData.xu, c.env.GAME_DB);
+  await saveUserData(targetUserId, targetUserData, db);
+  await updateLeaderboard(targetUserId, targetUsername, targetUserData.xu, db);
 
   await sendCommandLog(c.env, c.interaction.member?.user.username || c.interaction.user?.username || "Unknown", userId, `/nap ${targetUserId} ${amount}`, `old=${oldBalance}, new=${targetUserData.xu}`);
 

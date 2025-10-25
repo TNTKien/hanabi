@@ -15,15 +15,6 @@
 		"enabled": true
 	},
 	/**
-	 * KV Namespace for storing user data (will be deprecated, migrating to D1)
-	 */
-	"kv_namespaces": [
-		{
-			"binding": "GAME_DB",
-			"id": "4779470a237a4d84b96c245bf7742173"
-		}
-	],
-	/**
 	 * D1 Database for storing user data
 	 */
 	"d1_databases": [

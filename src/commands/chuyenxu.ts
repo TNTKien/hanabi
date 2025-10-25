@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 import { validateBetAmount, updateUserXu } from "../utils/validation";
@@ -39,7 +39,7 @@ export async function chuyenxuCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const senderData = await getUserData(userId, c.env.GAME_DB);
+  const senderData = await getUserData(userId, db);
 
   // Validate amount (minimum 100 xu to prevent spam)
   const validation = validateBetAmount(amount, senderData.xu, 100);
@@ -51,7 +51,7 @@ export async function chuyenxuCommand(c: CommandContext<{ Bindings: Env }>) {
   }
 
   // Get target user data
-  const targetData = await getUserData(targetUserId, c.env.GAME_DB);
+  const targetData = await getUserData(targetUserId, db);
 
   // Deduct from sender
   const senderUpdate = updateUserXu(senderData.xu, -amount);
@@ -87,11 +87,11 @@ export async function chuyenxuCommand(c: CommandContext<{ Bindings: Env }>) {
   const targetUsername = targetUser?.username || `User-${targetUserId.slice(-4)}`;
   targetData.username = targetUsername;
 
-  await saveUserData(userId, senderData, c.env.GAME_DB);
-  await saveUserData(targetUserId, targetData, c.env.GAME_DB);
+  await saveUserData(userId, senderData, db);
+  await saveUserData(targetUserId, targetData, db);
   
-  await updateLeaderboard(userId, senderUsername, senderData.xu, c.env.GAME_DB);
-  await updateLeaderboard(targetUserId, targetUsername, targetData.xu, c.env.GAME_DB);
+  await updateLeaderboard(userId, senderUsername, senderData.xu, db);
+  await updateLeaderboard(targetUserId, targetUsername, targetData.xu, db);
 
   const resultText = `💸 **Chuyển xu thành công!**\n\n` +
     `Từ: **${senderUsername}**\n` +

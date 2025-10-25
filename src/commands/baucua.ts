@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 import { validateBetAmount, calculateWinAmount, updateUserXu, updateUserXuOnLoss } from "../utils/validation";
@@ -9,6 +9,8 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
+
+  const db = initDB(c.env.DB);
 
   // @ts-ignore
   const choice = c.get("chon") as string;
@@ -22,7 +24,7 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const userData = await getUserData(userId, c.env.GAME_DB);
+  const userData = await getUserData(userId, db);
 
   // Validate bet amount
   const validation = validateBetAmount(betAmount, userData.xu, 1);
@@ -105,8 +107,8 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
     c.interaction.user?.username ||
     "Unknown";
   userData.username = username;
-  await saveUserData(userId, userData, c.env.GAME_DB);
-  await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
+  await saveUserData(userId, userData, db);
+  await updateLeaderboard(userId, username, userData.xu, db);
 
   await sendCommandLog(c.env, username, userId, "/baucua", resultText);
   return c.res({ content: resultText });

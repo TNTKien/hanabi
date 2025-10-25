@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 import {
@@ -18,7 +18,7 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   // @ts-ignore
   const betAmount = parseInt(c.get("cuoc") as string);
 
-  const userData = await getUserData(userId, c.env.GAME_DB);
+  const userData = await getUserData(userId, db);
 
   // Validate bet amount với mức tối thiểu 100 xu cho slot
   const validation = validateBetAmount(betAmount, userData.xu, 1000);
@@ -137,8 +137,8 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
     c.interaction.user?.username ||
     "Unknown";
   userData.username = username;
-  await saveUserData(userId, userData, c.env.GAME_DB);
-  await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
+  await saveUserData(userId, userData, db);
+  await updateLeaderboard(userId, username, userData.xu, db);
 
   await sendCommandLog(c.env, username, userId, "/slot", resultText);
   return c.res({ content: resultText });

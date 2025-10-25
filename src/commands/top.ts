@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, getTopUsers } from "../utils/database";
+import { initDB, getUserData, getTopUsers } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 
@@ -9,7 +9,7 @@ export async function topCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
   await sendCommandLog(c.env, username, userId, "/top", "invoked");
-  const topUsers = await getTopUsers(c.env.GAME_DB, 10);
+  const topUsers = await getTopUsers(db, 10);
 
   if (topUsers.length === 0) {
     return c.res({
@@ -35,11 +35,11 @@ export async function topCommand(c: CommandContext<{ Bindings: Env }>) {
   });
 
   if (userId) {
-    const allUsers = await getTopUsers(c.env.GAME_DB, 1000);
+    const allUsers = await getTopUsers(db, 1000);
     const userRank = allUsers.findIndex((u) => u.userId === userId);
 
     if (userRank >= 10) {
-      const userData = await getUserData(userId, c.env.GAME_DB);
+      const userData = await getUserData(userId, db);
       leaderboardText += `\n━━━━━━━━━━━━━━━\n`;
       leaderboardText += `**Bạn:** #${
         userRank + 1

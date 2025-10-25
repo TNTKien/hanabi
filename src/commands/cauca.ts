@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 import { updateUserXu } from "../utils/validation";
@@ -56,10 +56,10 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
+  const db = initDB(c.env.DB);
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-  const kv = c.env.GAME_DB;
 
-  const userData = await getUserData(userId, kv);
+  const userData = await getUserData(userId, db);
   const now = Date.now();
 
   // Check cooldown (1 minute 30 seconds)
@@ -99,8 +99,8 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
   userData.xu = xuUpdate.newXu!;
   userData.lastFish = now;
 
-  await saveUserData(userId, userData, kv);
-  await updateLeaderboard(userId, username, userData.xu, kv);
+  await saveUserData(userId, userData, db);
+  await updateLeaderboard(userId, username, userData.xu, db);
 
   // Count total unique fish
   const uniqueFish = Object.keys(userData.fishCollection).length;

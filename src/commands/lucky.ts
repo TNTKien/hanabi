@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 
@@ -9,7 +9,8 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
-  const userData = await getUserData(userId, c.env.GAME_DB);
+  const db = initDB(c.env.DB);
+  const userData = await getUserData(userId, db);
   const now = Date.now();
   const oneDay = 24 * 60 * 60 * 1000;
 
@@ -34,8 +35,8 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
     c.interaction.user?.username ||
     "Unknown";
   userData.username = username;
-  await saveUserData(userId, userData, c.env.GAME_DB);
-  await updateLeaderboard(userId, username, userData.xu, c.env.GAME_DB);
+  await saveUserData(userId, userData, db);
+  await updateLeaderboard(userId, username, userData.xu, db);
 
   const result = `🍀 Lucky! Bạn nhận được **${luckyAmount} xu**\nTổng xu: **${userData.xu} xu**`;
   await sendCommandLog(c.env, username, userId, "/lucky", `got=${luckyAmount}, total=${userData.xu}`);

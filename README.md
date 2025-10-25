@@ -4,15 +4,6 @@ A Discord bot for playing some games. 100% vibe coding.
 
 Got errors while playing? Kệ mẹ bạn or find me on discord.
 
-## ⚠️ MIGRATION IN PROGRESS
-
-🚧 **Đang migrate từ KV sang D1 Database**
-
-Xem hướng dẫn migration chi tiết:
-- 📋 [MIGRATION_CHECKLIST.md](./MIGRATION_CHECKLIST.md) - Checklist theo dõi tiến độ
-- 📖 [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - Hướng dẫn chi tiết từng bước
-- 📊 [MIGRATION_SUMMARY.md](./MIGRATION_SUMMARY.md) - Tổng quan migration
-
 ## Requirements
 
 - [Bun](https://bun.sh) - JavaScript runtime
@@ -53,23 +44,36 @@ DISCORD_PUBLIC_KEY=your_public_key
 wrangler login
 ```
 
-#### 4.2. Create D1 Database (NEW - Recommended)
+#### 4.2. Create D1 Database
 
 ```bash
 # Create D1 database
 bunx wrangler d1 create hanabi-db
 
-# Generate migrations
-bun run db:generate
-
-# Apply migrations
-bun run db:migrate
+# Copy the database_id from output and update wrangler.jsonc
 ```
 
-#### 4.3. (Legacy) Create KV namespace
+Update `wrangler.jsonc` with your database ID:
+
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "hanabi-db", 
+    "database_id": "YOUR_DATABASE_ID_HERE",
+    "migrations_dir": "drizzle"
+  }
+]
+```
+
+#### 4.3. Apply Database Migrations
 
 ```bash
-wrangler kv:namespace create "GAME_DB"
+# Generate migrations (already done)
+bun run db:generate
+
+# Apply migrations to your D1 database
+bun run db:migrate
 ```
 
 Save the returned **id** and update it in `wrangler.jsonc`:

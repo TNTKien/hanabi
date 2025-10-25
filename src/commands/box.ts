@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env } from "../types";
-import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 
@@ -10,7 +10,7 @@ export async function boxCommand(c: CommandContext<{ Bindings: Env }>) {
   if (!userId) return c.res("Không thể xác định người dùng!");
 
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-  const kv = c.env.GAME_DB;
+  const kv = db;
 
   const userData = await getUserData(userId, kv);
   const now = Date.now();
