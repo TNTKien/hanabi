@@ -48,7 +48,7 @@ wrangler login
 
 ```bash
 # Create D1 database
-bunx wrangler d1 create hanabi-db
+bunx wrangler d1 create your-database-name-here
 
 # Copy the database_id from output and update wrangler.jsonc
 ```
@@ -59,7 +59,7 @@ Update `wrangler.jsonc` with your database ID:
 "d1_databases": [
   {
     "binding": "DB",
-    "database_name": "hanabi-db", 
+    "database_name": "your-database-name-here",
     "database_id": "YOUR_DATABASE_ID_HERE",
     "migrations_dir": "drizzle"
   }
