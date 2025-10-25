@@ -20,7 +20,8 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
   // Check if user is the house (only house can use this command)
   if (userId !== houseUserId) {
     return c.res({
-      content: "❌ Bạn không có quyền sử dụng lệnh này!\nChỉ nhà cái mới có thể nạp xu.",
+      content:
+        "❌ Bạn không có quyền sử dụng lệnh này!\nChỉ nhà cái mới có thể nạp xu.",
       flags: 64, // Ephemeral
     });
   }
@@ -32,7 +33,8 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
 
   if (!targetUserId || !amount || amount <= 0 || isNaN(amount)) {
     return c.res({
-      content: "❌ Vui lòng nhập đúng thông tin!\n\nCách dùng: `/nap @user <số xu>`",
+      content:
+        "❌ Vui lòng nhập đúng thông tin!\n\nCách dùng: `/nap @user <số xu>`",
       flags: 64,
     });
   }
@@ -44,22 +46,35 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
     (async () => {
       try {
         const db = initDB(c.env.DB);
-        
+
         // Get target user data
         const targetUserData = await getUserData(targetUserId, db);
         const oldBalance = targetUserData.xu;
-        
+
         // Add xu to target user
         targetUserData.xu += amount;
 
         // Get target username (use existing or default)
         const targetUsername = targetUserData.username || "Unknown User";
-        
+
         // Update username and save
         await saveUserData(targetUserId, targetUserData, db);
-        await updateLeaderboard(targetUserId, targetUsername, targetUserData.xu, db);
+        await updateLeaderboard(
+          targetUserId,
+          targetUsername,
+          targetUserData.xu,
+          db
+        );
 
-        await sendCommandLog(c.env, c.interaction.member?.user.username || c.interaction.user?.username || "Unknown", userId, `/nap ${targetUserId} ${amount}`, `old=${oldBalance}, new=${targetUserData.xu}`);
+        await sendCommandLog(
+          c.env,
+          c.interaction.member?.user.username ||
+            c.interaction.user?.username ||
+            "Unknown",
+          userId,
+          `/nap ${targetUserId} ${amount}`,
+          `old=${oldBalance}, new=${targetUserData.xu}`
+        );
 
         await fetch(webhookUrl, {
           method: "PATCH",
@@ -70,9 +85,7 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
 **Người nhận:** ${targetUsername} (<@${targetUserId}>)
 **Số xu nạp:** +${amount.toLocaleString()} xu
 **Số dư cũ:** ${oldBalance.toLocaleString()} xu
-**Số dư mới:** ${targetUserData.xu.toLocaleString()} xu
-
-💰 Đã cập nhật vào bảng xếp hạng!`
+**Số dư mới:** ${targetUserData.xu.toLocaleString()} xu`,
           }),
         });
       } catch (error) {

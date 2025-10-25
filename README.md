@@ -4,6 +4,12 @@ A Discord bot for playing some games. 100% vibe coding.
 
 Got errors while playing? Kệ mẹ bạn or find me on discord.
 
+## BREAKING CHANGES 26/10/2025
+
+Start using Cloudflare D1 instead of KV. Ask any AI to help you migrate your data if needed.
+
+Recommended do it yourself, see the mess AI did on [this branch](http://github.com/TNTKien/hanabi/tree/d1_only) (still worked btw).
+
 ## Requirements
 
 - [Bun](https://bun.sh) - JavaScript runtime
