@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2f7121a1-200b-41a7-8506-351af892e507",
+  "id": "6226b50c-8f4b-4b99-9cf9-5b943f97244e",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "fish_collection": {

@@ -21,7 +21,7 @@
 		{
 			"binding": "DB",
 			"database_name": "hanabi-db",
-			"database_id": "5edb5b80-2757-46d3-ac48-607f19e39b97",
+			"database_id": "301477f2-c482-450a-8417-36f365679f92",
 			"migrations_dir": "drizzle"
 		}
 	],
