@@ -34,7 +34,7 @@ export interface GachaBanner {
 }
 
 export interface Env {
-  GAME_DB: KVNamespace;
+  DB: D1Database; // D1 database
   DISCORD_APPLICATION_ID: string;
   DISCORD_TOKEN?: string;
   LOG_GUILD_ID?: string;

@@ -44,10 +44,36 @@ DISCORD_PUBLIC_KEY=your_public_key
 wrangler login
 ```
 
-#### 4.2. Create KV namespace
+#### 4.2. Create D1 Database
 
 ```bash
-wrangler kv:namespace create "GAME_DB"
+# Create D1 database
+bunx wrangler d1 create your-database-name-here
+
+# Copy the database_id from output and update wrangler.jsonc
+```
+
+Update `wrangler.jsonc` with your database ID:
+
+```jsonc
+"d1_databases": [
+  {
+    "binding": "DB",
+    "database_name": "your-database-name-here",
+    "database_id": "YOUR_DATABASE_ID_HERE",
+    "migrations_dir": "drizzle"
+  }
+]
+```
+
+#### 4.3. Apply Database Migrations
+
+```bash
+# Generate migrations (already done)
+bun run db:generate
+
+# Apply migrations to your D1 database
+bun run db:migrate
 ```
 
 Save the returned **id** and update it in `wrangler.jsonc`:

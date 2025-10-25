@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env, BACharacter } from "../types";
-import { getUserData, saveUserData, updateLeaderboard } from "../utils/database";
+import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 import baCharacters from "../data/ba-characters.json";
@@ -181,7 +181,7 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
   if (!userId) return c.res("Không thể xác định người dùng!");
 
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-  const kv = c.env.GAME_DB;
+  const kv = db;
 
   // @ts-ignore - get game option
   const game = c.get("game") as string;

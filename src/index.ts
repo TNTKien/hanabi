@@ -1,4 +1,5 @@
 import { DiscordHono } from "discord-hono";
+import { Hono } from "hono";
 import type { Env } from "./types";
 import { isBlacklisted, blacklistedResponse } from "./utils/blacklist";
 
