@@ -9,7 +9,9 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "wrangler d1 migrations apply hanabi-db --remote",
 		"db:studio": "drizzle-kit studio",
-		"migrate:run": "wrangler dev src/migrate-runner.ts --config wrangler.migrate.jsonc"
+		"migrate:run": "wrangler dev src/migrate-runner.ts --config wrangler.migrate.jsonc",
+		"migrate:run-remote": "wrangler dev src/migrate-runner.ts --config wrangler.migrate.jsonc --remote",
+		"populate-kv": "bun run scripts/populate-kv.ts"
 	},
 	"dependencies": {
 		"discord-hono": "^0.20.1",

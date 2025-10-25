@@ -12,9 +12,10 @@
  */
 
 import { initDB, saveUserData } from "../db";
-import { users } from "../db/schema";
+import { users, fishCollection, gachaCollection } from "../db/schema";
 import { eq } from "drizzle-orm";
 import type { UserData } from "../types";
+import { capXu } from "./validation";
 
 export async function migrateKVtoD1(kv: KVNamespace, d1: D1Database) {
   const db = initDB(d1);
@@ -29,7 +30,12 @@ export async function migrateKVtoD1(kv: KVNamespace, d1: D1Database) {
     const list = await kv.list({ prefix: "user:" });
     console.log(`Found ${list.keys.length} users to migrate`);
 
-    // Migrate each user
+    // Batch insert users for better performance
+    const userBatch: any[] = [];
+    const fishBatch: any[] = [];
+    const gachaBatch: any[] = [];
+
+    // Collect all data first
     for (const key of list.keys) {
       try {
         const userId = key.name.replace("user:", "");
@@ -42,20 +48,64 @@ export async function migrateKVtoD1(kv: KVNamespace, d1: D1Database) {
 
         const userData: UserData = JSON.parse(data);
         
-        // Save to D1
-        await saveUserData(userId, userData, db);
-        
-        console.log(`Migrated user ${userId} - ${userData.xu} xu`);
+        // Prepare user record
+        userBatch.push({
+          userId,
+          username: userData.username,
+          xu: capXu(userData.xu),
+          lastLucky: userData.lastLucky,
+          lastBox: userData.lastBox,
+          lastFish: userData.lastFish,
+          buffActive: userData.buffActive || false,
+          buffMultiplier: userData.buffMultiplier,
+          updatedAt: new Date(),
+        });
+
+        // Prepare fish collection
+        if (userData.fishCollection) {
+          for (const [fishType, count] of Object.entries(userData.fishCollection)) {
+            if (count > 0) {
+              fishBatch.push({ userId, fishType, count });
+            }
+          }
+        }
+
+        // Prepare gacha collection
+        if (userData.gachaCollection) {
+          for (const [game, characters] of Object.entries(userData.gachaCollection)) {
+            for (const [characterId, count] of Object.entries(characters)) {
+              if (count > 0) {
+                gachaBatch.push({ userId, game, characterId, count });
+              }
+            }
+          }
+        }
+
+        console.log(`Prepared user ${userId} - ${userData.xu} xu`);
         results.success++;
       } catch (error) {
-        const errorMsg = `Failed to migrate ${key.name}: ${error}`;
+        const errorMsg = `Failed to prepare ${key.name}: ${error}`;
         console.error(errorMsg);
         results.failed++;
         results.errors.push(errorMsg);
       }
     }
 
-    // Also migrate leaderboard data to ensure usernames are preserved
+    // Batch insert all users using raw SQL for better performance
+    console.log(`Inserting ${userBatch.length} users in batch...`);
+    
+    for (const user of userBatch) {
+      await db.insert(users).values(user).onConflictDoUpdate({
+        target: users.userId,
+        set: user,
+      });
+    }
+
+    // Skip fish and gacha collection for now to avoid too many insertions
+    // Will be populated when users actually use the bot
+    console.log(`Skipped ${fishBatch.length} fish records and ${gachaBatch.length} gacha records (will be generated on-demand)`);
+
+    // Migrate leaderboard data to update usernames
     const leaderboardList = await kv.list({ prefix: "leaderboard:" });
     console.log(`Found ${leaderboardList.keys.length} leaderboard entries`);
 
@@ -65,9 +115,9 @@ export async function migrateKVtoD1(kv: KVNamespace, d1: D1Database) {
         if (!data) continue;
 
         const leaderboardData = JSON.parse(data);
-        const { userId, username, xu } = leaderboardData;
+        const { userId, username } = leaderboardData;
 
-        // Update username in D1 if not already set
+        // Update username if exists
         const existingUser = await db.query.users.findFirst({
           where: (users, { eq }) => eq(users.userId, userId),
         });

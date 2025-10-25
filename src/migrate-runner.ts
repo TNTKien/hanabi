@@ -42,19 +42,6 @@ app.get("/", (c) => {
 app.get("/migrate", async (c) => {
   try {
     console.log("Starting migration...");
-    
-    // Check if KV has data
-    const kvList = await c.env.GAME_DB.list({ limit: 1 });
-    console.log(`KV contains ${kvList.keys.length > 0 ? 'data' : 'no data'}`);
-    
-    if (kvList.keys.length === 0) {
-      return c.json({
-        success: false,
-        error: "KV namespace is empty. Make sure you're running against the correct environment with data.",
-        hint: "Local KV is empty by default. You may need to migrate from production or populate local KV first.",
-      }, 400);
-    }
-    
     const results = await migrateKVtoD1(c.env.GAME_DB, c.env.DB);
     return c.json({
       success: true,
@@ -63,6 +50,37 @@ app.get("/migrate", async (c) => {
     });
   } catch (error) {
     console.error("Migration failed:", error);
+    return c.json({
+      success: false,
+      error: String(error),
+    }, 500);
+  }
+});
+
+app.get("/verify", async (c) => {
+  try {
+    const db = c.env.DB;
+    
+    // Count users
+    const countResult = await db.prepare("SELECT COUNT(*) as total FROM users").all();
+    
+    // Get top 10 users
+    const topUsers = await db.prepare(
+      "SELECT user_id, username, xu FROM users ORDER BY xu DESC LIMIT 10"
+    ).all();
+    
+    // Get test data
+    const testData = await db.prepare(
+      "SELECT user_id, username, xu FROM users WHERE user_id IN ('123456789', '987654321', '555555555', '111111111', '222222222')"
+    ).all();
+    
+    return c.json({
+      success: true,
+      totalUsers: countResult.results[0],
+      topUsers: topUsers.results,
+      testData: testData.results,
+    });
+  } catch (error) {
     return c.json({
       success: false,
       error: String(error),
