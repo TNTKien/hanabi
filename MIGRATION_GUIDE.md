@@ -15,7 +15,7 @@
 Migration runner đã sẵn sàng! Làm theo các bước sau:
 
 ```bash
-# 1. Chạy migration runner
+# 1. Chạy migration runner 
 bun run migrate:run
 
 # 2. Mở browser và truy cập:
