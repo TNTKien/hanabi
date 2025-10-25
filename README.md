@@ -4,6 +4,15 @@ A Discord bot for playing some games. 100% vibe coding.
 
 Got errors while playing? Kệ mẹ bạn or find me on discord.
 
+## ⚠️ MIGRATION IN PROGRESS
+
+🚧 **Đang migrate từ KV sang D1 Database**
+
+Xem hướng dẫn migration chi tiết:
+- 📋 [MIGRATION_CHECKLIST.md](./MIGRATION_CHECKLIST.md) - Checklist theo dõi tiến độ
+- 📖 [MIGRATION_GUIDE.md](./MIGRATION_GUIDE.md) - Hướng dẫn chi tiết từng bước
+- 📊 [MIGRATION_SUMMARY.md](./MIGRATION_SUMMARY.md) - Tổng quan migration
+
 ## Requirements
 
 - [Bun](https://bun.sh) - JavaScript runtime
@@ -44,7 +53,20 @@ DISCORD_PUBLIC_KEY=your_public_key
 wrangler login
 ```
 
-#### 4.2. Create KV namespace
+#### 4.2. Create D1 Database (NEW - Recommended)
+
+```bash
+# Create D1 database
+bunx wrangler d1 create hanabi-db
+
+# Generate migrations
+bun run db:generate
+
+# Apply migrations
+bun run db:migrate
+```
+
+#### 4.3. (Legacy) Create KV namespace
 
 ```bash
 wrangler kv:namespace create "GAME_DB"

@@ -15,12 +15,23 @@
 		"enabled": true
 	},
 	/**
-	 * KV Namespace for storing user data
+	 * KV Namespace for storing user data (will be deprecated, migrating to D1)
 	 */
 	"kv_namespaces": [
 		{
 			"binding": "GAME_DB",
 			"id": "4779470a237a4d84b96c245bf7742173"
+		}
+	],
+	/**
+	 * D1 Database for storing user data
+	 */
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "hanabi-db",
+			"database_id": "5edb5b80-2757-46d3-ac48-607f19e39b97",
+			"migrations_dir": "drizzle"
 		}
 	],
 	/**

@@ -34,7 +34,8 @@ export interface GachaBanner {
 }
 
 export interface Env {
-  GAME_DB: KVNamespace;
+  GAME_DB: KVNamespace; // Legacy KV (will be removed after migration)
+  DB: D1Database; // New D1 database
   DISCORD_APPLICATION_ID: string;
   DISCORD_TOKEN?: string;
   LOG_GUILD_ID?: string;
