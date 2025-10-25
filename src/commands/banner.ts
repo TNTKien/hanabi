@@ -1,29 +1,26 @@
 import type { CommandContext } from "discord-hono";
 import type { Env, BACharacter } from "../types";
+import { initDB, getCurrentBanner, createBanner } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 import baCharacters from "../data/ba-characters.json";
 
 // Get current banner character (same logic as gacha.ts)
-async function getCurrentBanner(kv: KVNamespace, game: string): Promise<BACharacter | null> {
+async function getBannerInfo(db: ReturnType<typeof initDB>, game: string): Promise<{ character: BACharacter; timeLeft: string } | null> {
   if (game !== "blue_archive") return null;
 
-  const bannerKey = `banner:${game}`;
-  const bannerData = await kv.get(bannerKey);
+  const banner = await getCurrentBanner(db, game);
   
   const now = Date.now();
-  const oneDayMs = 24 * 60 * 60 * 1000;
   
-  if (bannerData) {
-    const banner = JSON.parse(bannerData);
-    // Check if banner is still valid
-    if (banner.endTime > now) {
-      const timeLeft = banner.endTime - now;
-      const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
-      const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-      
-      const character = (baCharacters as BACharacter[]).find(c => c.id === banner.characterId);
-      return character ? { ...character, timeLeft: `${hoursLeft}h ${minutesLeft}m` } as any : null;
+  if (banner) {
+    const timeLeft = banner.endTime - now;
+    const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
+    const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+    
+    const character = (baCharacters as BACharacter[]).find(c => c.id === banner.characterId);
+    if (character) {
+      return { character, timeLeft: `${hoursLeft}h ${minutesLeft}m` };
     }
   }
   
@@ -31,21 +28,15 @@ async function getCurrentBanner(kv: KVNamespace, game: string): Promise<BACharac
   const ssrCharacters = (baCharacters as BACharacter[]).filter(c => c.rarity === "SSR");
   const randomSSR = ssrCharacters[Math.floor(Math.random() * ssrCharacters.length)];
   
-  const newBanner = {
-    game,
-    characterId: randomSSR.id,
-    startTime: now,
-    endTime: now + oneDayMs,
-  };
-  
-  await kv.put(bannerKey, JSON.stringify(newBanner));
-  return { ...randomSSR, timeLeft: "24h 0m" } as any;
+  await createBanner(db, game, randomSSR.id);
+  return { character: randomSSR, timeLeft: "24h 0m" };
 }
 
 export async function bannerCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
-  const kv = c.env.GAME_DB;
+  
+  const db = initDB(c.env.DB);
 
   // @ts-ignore - get game option
   const game = c.get("game") as string;
@@ -57,14 +48,16 @@ export async function bannerCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const bannerCharacter = await getCurrentBanner(kv, game) as any;
+  const bannerInfo = await getBannerInfo(db, game);
 
-  if (!bannerCharacter) {
+  if (!bannerInfo) {
     return c.res({
       content: "❌ Không thể tải thông tin banner!",
       flags: 64,
     });
   }
+
+  const { character: bannerCharacter, timeLeft } = bannerInfo;
 
   let output = `⭐ **Blue Archive - Rate-Up Banner** ⭐\n\n`;
   output += `🟪 **${bannerCharacter.name}**\n`;
@@ -73,7 +66,7 @@ export async function bannerCommand(c: CommandContext<{ Bindings: Env }>) {
   output += `🔫 Weapon: ${bannerCharacter.weaponType}\n`;
   output += `🏫 School: ${bannerCharacter.school}\n`;
   output += `🎪 Club: ${bannerCharacter.club}\n\n`;
-  output += `⏰ Thời gian còn lại: **${bannerCharacter.timeLeft}**\n\n`;
+  output += `⏰ Thời gian còn lại: **${timeLeft}**\n\n`;
   output += `✨ **Rate-Up:** Tỷ lệ nhận được ${bannerCharacter.name} tăng gấp đôi!\n`;
   output += `💰 Cost: **1,200 xu** cho 10 rolls (guaranteed SR+)`;
 

@@ -18,6 +18,7 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   // @ts-ignore
   const betAmount = parseInt(c.get("cuoc") as string);
 
+  const db = initDB(c.env.DB);
   const userData = await getUserData(userId, db);
 
   // Validate bet amount với mức tối thiểu 100 xu cho slot

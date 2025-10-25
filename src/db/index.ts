@@ -219,3 +219,54 @@ export async function transferToHouse(
 export function rollDice(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
+
+/**
+ * Get current banner for a game
+ */
+export async function getCurrentBanner(
+  db: ReturnType<typeof initDB>,
+  game: string
+): Promise<{ characterId: number; endTime: number } | null> {
+  const now = Date.now();
+  
+  // Find active banner
+  const banner = await db.query.gachaBanners.findFirst({
+    where: (banners, { eq, and, gt }) => 
+      and(
+        eq(banners.game, game),
+        gt(banners.endTime, now)
+      ),
+    orderBy: [desc(schema.gachaBanners.endTime)],
+  });
+
+  if (banner) {
+    return {
+      characterId: banner.characterId,
+      endTime: banner.endTime,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Create new banner for a game
+ */
+export async function createBanner(
+  db: ReturnType<typeof initDB>,
+  game: string,
+  characterId: number,
+  durationMs: number = 24 * 60 * 60 * 1000 // 24 hours
+): Promise<{ characterId: number; endTime: number }> {
+  const now = Date.now();
+  const endTime = now + durationMs;
+
+  await db.insert(schema.gachaBanners).values({
+    game,
+    characterId,
+    startTime: now,
+    endTime,
+  });
+
+  return { characterId, endTime };
+}

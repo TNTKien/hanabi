@@ -1,6 +1,6 @@
 import type { CommandContext } from "discord-hono";
 import type { Env, BACharacter } from "../types";
-import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
+import { initDB, getUserData, saveUserData, updateLeaderboard, getCurrentBanner, createBanner } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
 import baCharacters from "../data/ba-characters.json";
@@ -20,35 +20,20 @@ const GACHA_RATES = {
 const ROLLS_PER_PULL = 10;
 
 // Get current banner character (rotates every 24 hours)
-async function getCurrentBanner(kv: KVNamespace, game: string): Promise<BACharacter | null> {
+async function getBannerCharacter(db: ReturnType<typeof initDB>, game: string): Promise<BACharacter | null> {
   if (game !== "blue_archive") return null;
 
-  const bannerKey = `banner:${game}`;
-  const bannerData = await kv.get(bannerKey);
+  const banner = await getCurrentBanner(db, game);
   
-  const now = Date.now();
-  const oneDayMs = 24 * 60 * 60 * 1000;
-  
-  if (bannerData) {
-    const banner = JSON.parse(bannerData);
-    // Check if banner is still valid
-    if (banner.endTime > now) {
-      return (baCharacters as BACharacter[]).find(c => c.id === banner.characterId) || null;
-    }
+  if (banner) {
+    return (baCharacters as BACharacter[]).find(c => c.id === banner.characterId) || null;
   }
   
   // Need to create new banner
   const ssrCharacters = (baCharacters as BACharacter[]).filter(c => c.rarity === "SSR");
   const randomSSR = ssrCharacters[Math.floor(Math.random() * ssrCharacters.length)];
   
-  const newBanner = {
-    game,
-    characterId: randomSSR.id,
-    startTime: now,
-    endTime: now + oneDayMs,
-  };
-  
-  await kv.put(bannerKey, JSON.stringify(newBanner));
+  await createBanner(db, game, randomSSR.id);
   return randomSSR;
 }
 
@@ -181,7 +166,7 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
   if (!userId) return c.res("Không thể xác định người dùng!");
 
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-  const kv = db;
+  const db = initDB(c.env.DB);
 
   // @ts-ignore - get game option
   const game = c.get("game") as string;
@@ -194,7 +179,7 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
   }
 
   const cost = GACHA_COSTS[game];
-  const userData = await getUserData(userId, kv);
+  const userData = await getUserData(userId, db);
 
   // Check if user has enough xu
   if (userData.xu < cost) {
@@ -205,7 +190,7 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
   }
 
   // Get current banner
-  const bannerCharacter = await getCurrentBanner(kv, game);
+  const bannerCharacter = await getBannerCharacter(db, game);
 
   // Perform 10-pull
   const results = performTenPull(bannerCharacter);
@@ -226,8 +211,8 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
     userData.gachaCollection![game][charId] = (userData.gachaCollection![game][charId] || 0) + 1;
   });
 
-  await saveUserData(userId, userData, kv);
-  await updateLeaderboard(userId, username, userData.xu, kv);
+  await saveUserData(userId, userData, db);
+  await updateLeaderboard(userId, username, userData.xu, db);
 
   // Format output
   let output = `🎰 **Blue Archive Gacha** 🎰\n\n`;

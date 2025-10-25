@@ -37,6 +37,8 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  const db = initDB(c.env.DB);
+  
   // Get target user data
   const targetUserData = await getUserData(targetUserId, db);
   const oldBalance = targetUserData.xu;

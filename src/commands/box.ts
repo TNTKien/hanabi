@@ -10,7 +10,7 @@ export async function boxCommand(c: CommandContext<{ Bindings: Env }>) {
   if (!userId) return c.res("Không thể xác định người dùng!");
 
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-  const kv = db;
+  const kv = initDB(c.env.DB);
 
   const userData = await getUserData(userId, kv);
   const now = Date.now();

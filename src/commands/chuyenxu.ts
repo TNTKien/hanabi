@@ -39,6 +39,7 @@ export async function chuyenxuCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  const db = initDB(c.env.DB);
   const senderData = await getUserData(userId, db);
 
   // Validate amount (minimum 100 xu to prevent spam)

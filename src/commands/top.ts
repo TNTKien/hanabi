@@ -9,6 +9,8 @@ export async function topCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
   await sendCommandLog(c.env, username, userId, "/top", "invoked");
+  
+  const db = initDB(c.env.DB);
   const topUsers = await getTopUsers(db, 10);
 
   if (topUsers.length === 0) {

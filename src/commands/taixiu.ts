@@ -22,6 +22,7 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  const db = initDB(c.env.DB);
   const userData = await getUserData(userId, db);
 
   // Validate bet amount
