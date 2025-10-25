@@ -37,32 +37,56 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const db = initDB(c.env.DB);
-  
-  // Get target user data
-  const targetUserData = await getUserData(targetUserId, db);
-  const oldBalance = targetUserData.xu;
-  
-  // Add xu to target user
-  targetUserData.xu += amount;
+  // Defer response
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
-  // Get target username (use existing or default)
-  const targetUsername = targetUserData.username || "Unknown User";
-  
-  // Update username and save
-  await saveUserData(targetUserId, targetUserData, db);
-  await updateLeaderboard(targetUserId, targetUsername, targetUserData.xu, db);
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        const db = initDB(c.env.DB);
+        
+        // Get target user data
+        const targetUserData = await getUserData(targetUserId, db);
+        const oldBalance = targetUserData.xu;
+        
+        // Add xu to target user
+        targetUserData.xu += amount;
 
-  await sendCommandLog(c.env, c.interaction.member?.user.username || c.interaction.user?.username || "Unknown", userId, `/nap ${targetUserId} ${amount}`, `old=${oldBalance}, new=${targetUserData.xu}`);
+        // Get target username (use existing or default)
+        const targetUsername = targetUserData.username || "Unknown User";
+        
+        // Update username and save
+        await saveUserData(targetUserId, targetUserData, db);
+        await updateLeaderboard(targetUserId, targetUsername, targetUserData.xu, db);
 
-  return c.res({
-    content: `✅ **NẠP XU THÀNH CÔNG**
+        await sendCommandLog(c.env, c.interaction.member?.user.username || c.interaction.user?.username || "Unknown", userId, `/nap ${targetUserId} ${amount}`, `old=${oldBalance}, new=${targetUserData.xu}`);
+
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: `✅ **NẠP XU THÀNH CÔNG**
 
 **Người nhận:** ${targetUsername} (<@${targetUserId}>)
 **Số xu nạp:** +${amount.toLocaleString()} xu
 **Số dư cũ:** ${oldBalance.toLocaleString()} xu
 **Số dư mới:** ${targetUserData.xu.toLocaleString()} xu
 
-💰 Đã cập nhật vào bảng xếp hạng!`,
-  });
+💰 Đã cập nhật vào bảng xếp hạng!`
+          }),
+        });
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi nạp xu!" }),
+        });
+      }
+    })()
+  );
+
+  return new Response(
+    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    { headers: { "Content-Type": "application/json" } }
+  );
 }

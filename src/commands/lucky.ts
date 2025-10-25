@@ -9,6 +9,7 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
+  // Quick check before defer
   const db = initDB(c.env.DB);
   const userData = await getUserData(userId, db);
   const now = Date.now();
@@ -25,20 +26,42 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const luckyAmount = Math.floor(Math.random() * 10001); // 0-10000
-  userData.xu += luckyAmount;
-  userData.lastLucky = now;
+  // Defer response
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
+  const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
 
-  // Update username and leaderboard
-  const username =
-    c.interaction.member?.user.username ||
-    c.interaction.user?.username ||
-    "Unknown";
-  userData.username = username;
-  await saveUserData(userId, userData, db);
-  await updateLeaderboard(userId, username, userData.xu, db);
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        const luckyAmount = Math.floor(Math.random() * 10001); // 0-10000
+        userData.xu += luckyAmount;
+        userData.lastLucky = now;
 
-  const result = `🍀 Lucky! Bạn nhận được **${luckyAmount} xu**\nTổng xu: **${userData.xu} xu**`;
-  await sendCommandLog(c.env, username, userId, "/lucky", `got=${luckyAmount}, total=${userData.xu}`);
-  return c.res({ content: result });
+        // Update username and leaderboard
+        userData.username = username;
+        await saveUserData(userId, userData, db);
+        await updateLeaderboard(userId, username, userData.xu, db);
+
+        const result = `🍀 Lucky! Bạn nhận được **${luckyAmount} xu**\nTổng xu: **${userData.xu} xu**`;
+        await sendCommandLog(c.env, username, userId, "/lucky", `got=${luckyAmount}, total=${userData.xu}`);
+        
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: result }),
+        });
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi nhận xu may mắn!" }),
+        });
+      }
+    })()
+  );
+
+  return new Response(
+    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    { headers: { "Content-Type": "application/json" } }
+  );
 }

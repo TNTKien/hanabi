@@ -10,8 +10,6 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
-  const db = initDB(c.env.DB);
-
   // @ts-ignore
   const choice = c.get("chon") as string;
   // @ts-ignore
@@ -24,6 +22,8 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  // Quick validation before defer
+  const db = initDB(c.env.DB);
   const userData = await getUserData(userId, db);
 
   // Validate bet amount
@@ -35,81 +35,107 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  const animals = ["cua", "tom", "ca", "nai", "bau", "ga"];
-  const animalEmojis: Record<string, string> = {
-    cua: "🦀",
-    tom: "🦐",
-    ca: "🐟",
-    nai: "🦌",
-    bau: "🎃",
-    ga: "🐓",
-  };
-  const animalNames: Record<string, string> = {
-    cua: "Cua",
-    tom: "Tôm",
-    ca: "Cá",
-    nai: "Nai",
-    bau: "Bầu",
-    ga: "Gà",
-  };
+  // Defer response
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
+  const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
 
-  const roll1 = animals[Math.floor(Math.random() * animals.length)];
-  const roll2 = animals[Math.floor(Math.random() * animals.length)];
-  const roll3 = animals[Math.floor(Math.random() * animals.length)];
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        const animals = ["cua", "tom", "ca", "nai", "bau", "ga"];
+        const animalEmojis: Record<string, string> = {
+          cua: "🦀",
+          tom: "🦐",
+          ca: "🐟",
+          nai: "🦌",
+          bau: "🎃",
+          ga: "🐓",
+        };
+        const animalNames: Record<string, string> = {
+          cua: "Cua",
+          tom: "Tôm",
+          ca: "Cá",
+          nai: "Nai",
+          bau: "Bầu",
+          ga: "Gà",
+        };
 
-  const matches = [roll1, roll2, roll3].filter((r) => r === choice).length;
+        const roll1 = animals[Math.floor(Math.random() * animals.length)];
+        const roll2 = animals[Math.floor(Math.random() * animals.length)];
+        const roll3 = animals[Math.floor(Math.random() * animals.length)];
 
-  let resultText = `Kết quả: ${animalEmojis[roll1]} ${animalEmojis[roll2]} ${animalEmojis[roll3]}\n`;
-  resultText += `${animalNames[roll1]} - ${animalNames[roll2]} - ${animalNames[roll3]}\n\n`;
-  resultText += `Bạn chọn: ${animalEmojis[choice]} ${animalNames[choice]}\n\n`;
+        const matches = [roll1, roll2, roll3].filter((r) => r === choice).length;
 
-  if (matches === 0) {
-    // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
-    const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
-    userData.xu = lossUpdate.newXu;
-    
-    if (lossUpdate.actualLoss < betAmount) {
-      resultText += `**THUA!** -${lossUpdate.actualLoss.toLocaleString()} xu (Hết xu!)`;
-    } else {
-      resultText += `**THUA!** -${betAmount.toLocaleString()} xu`;
-    }
-  } else {
-    // House edge: Giảm multiplier xuống 0.9x cho mỗi match
-    const multiplier = matches * 0.9; // 0.9x, 1.8x, 2.7x thay vì 1x, 2x, 3x
-    const winCalc = calculateWinAmount(betAmount, multiplier);
-    
-    if (!winCalc.success) {
-      return c.res({
-        content: winCalc.error + "\n⚠️ Vui lòng giảm số xu cược!",
-        flags: 64,
-      });
-    }
-    
-    const winAmount = winCalc.amount!;
-    const xuUpdate = updateUserXu(userData.xu, winAmount);
-    
-    if (!xuUpdate.success) {
-      return c.res({
-        content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!",
-        flags: 64,
-      });
-    }
-    
-    userData.xu = xuUpdate.newXu!;
-    resultText += `**THẮNG ${matches}x!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
-  }
+        let resultText = `Kết quả: ${animalEmojis[roll1]} ${animalEmojis[roll2]} ${animalEmojis[roll3]}\n`;
+        resultText += `${animalNames[roll1]} - ${animalNames[roll2]} - ${animalNames[roll3]}\n\n`;
+        resultText += `Bạn chọn: ${animalEmojis[choice]} ${animalNames[choice]}\n\n`;
 
-  resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;
+        if (matches === 0) {
+          // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
+          const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
+          userData.xu = lossUpdate.newXu;
+          
+          if (lossUpdate.actualLoss < betAmount) {
+            resultText += `**THUA!** -${lossUpdate.actualLoss.toLocaleString()} xu (Hết xu!)`;
+          } else {
+            resultText += `**THUA!** -${betAmount.toLocaleString()} xu`;
+          }
+        } else {
+          // House edge: Giảm multiplier xuống 0.9x cho mỗi match
+          const multiplier = matches * 0.9; // 0.9x, 1.8x, 2.7x thay vì 1x, 2x, 3x
+          const winCalc = calculateWinAmount(betAmount, multiplier);
+          
+          if (!winCalc.success) {
+            await fetch(webhookUrl, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: winCalc.error + "\n⚠️ Vui lòng giảm số xu cược!" }),
+            });
+            return;
+          }
+          
+          const winAmount = winCalc.amount!;
+          const xuUpdate = updateUserXu(userData.xu, winAmount);
+          
+          if (!xuUpdate.success) {
+            await fetch(webhookUrl, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!" }),
+            });
+            return;
+          }
+          
+          userData.xu = xuUpdate.newXu!;
+          resultText += `**THẮNG ${matches}x!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
+        }
 
-  // Update username and leaderboard
-  const username =
-    c.interaction.member?.user.username ||
-    c.interaction.user?.username ||
-    "Unknown";
-  userData.username = username;
-  await saveUserData(userId, userData, db);
-  await updateLeaderboard(userId, username, userData.xu, db);
+        resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;
 
-  await sendCommandLog(c.env, username, userId, "/baucua", resultText);
-  return c.res({ content: resultText });
+        // Update username and leaderboard
+        userData.username = username;
+        await saveUserData(userId, userData, db);
+        await updateLeaderboard(userId, username, userData.xu, db);
+
+        await sendCommandLog(c.env, username, userId, "/baucua", resultText);
+        
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: resultText }),
+        });
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi chơi bầu cua!" }),
+        });
+      }
+    })()
+  );
+
+  return new Response(
+    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    { headers: { "Content-Type": "application/json" } }
+  );
 }

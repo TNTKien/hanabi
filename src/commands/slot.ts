@@ -18,6 +18,7 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   // @ts-ignore
   const betAmount = parseInt(c.get("cuoc") as string);
 
+  // Quick validation before defer
   const db = initDB(c.env.DB);
   const userData = await getUserData(userId, db);
 
@@ -30,117 +31,143 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  // Thêm nhiều symbol hơn để tăng độ khó
-  const symbols = ["🍒", "🍋", "🍊", "🍇", "🍉", "🍓", "🍌", "💎", "⭐", "7️⃣"];
-  // Giảm mạnh tỷ lệ xuất hiện kim cương và sao, thêm symbols thường
-  const weights = [18, 16, 15, 14, 13, 12, 10, 1, 0.5, 0.5];
+  // Defer response
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
+  const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
 
-  const rollSymbol = () => {
-    const total = weights.reduce((a, b) => a + b, 0);
-    let random = Math.random() * total;
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        // Thêm nhiều symbol hơn để tăng độ khó
+        const symbols = ["🍒", "🍋", "🍊", "🍇", "🍉", "🍓", "🍌", "💎", "⭐", "7️⃣"];
+        // Giảm mạnh tỷ lệ xuất hiện kim cương và sao, thêm symbols thường
+        const weights = [18, 16, 15, 14, 13, 12, 10, 1, 0.5, 0.5];
 
-    for (let i = 0; i < symbols.length; i++) {
-      random -= weights[i];
-      if (random <= 0) return symbols[i];
-    }
-    return symbols[0];
-  };
+        const rollSymbol = () => {
+          const total = weights.reduce((a, b) => a + b, 0);
+          let random = Math.random() * total;
 
-  const slot1 = rollSymbol();
-  const slot2 = rollSymbol();
-  const slot3 = rollSymbol();
+          for (let i = 0; i < symbols.length; i++) {
+            random -= weights[i];
+            if (random <= 0) return symbols[i];
+          }
+          return symbols[0];
+        };
 
-  let resultText = `🎰 SLOT MACHINE\n\n`;
-  resultText += `┃ ${slot1} ┃ ${slot2} ┃ ${slot3} ┃\n\n`;
+        const slot1 = rollSymbol();
+        const slot2 = rollSymbol();
+        const slot3 = rollSymbol();
 
-  let winAmount = 0;
-  let multiplier = 0;
+        let resultText = `🎰 SLOT MACHINE\n\n`;
+        resultText += `┃ ${slot1} ┃ ${slot2} ┃ ${slot3} ┃\n\n`;
 
-  if (slot1 === slot2 && slot2 === slot3) {
-    // Giữ nguyên mức phần thưởng như cũ
-    if (slot1 === "7️⃣") {
-      multiplier = 50; // JACKPOT!
-      resultText += `**🎉 JACKPOT! 7-7-7!**\n`;
-    } else if (slot1 === "⭐") {
-      multiplier = 20;
-      resultText += `**⭐ SUPER WIN!**\n`;
-    } else if (slot1 === "💎") {
-      multiplier = 15;
-      resultText += `**💎 MEGA WIN!**\n`;
-    } else {
-      multiplier = 10;
-      resultText += `**🎊 BIG WIN! 3 giống nhau!**\n`;
-    }
-  } else if (slot1 === slot2 || slot2 === slot3 || slot1 === slot3) {
-    const matchSymbol =
-      slot1 === slot2 ? slot1 : slot2 === slot3 ? slot2 : slot1;
+        let winAmount = 0;
+        let multiplier = 0;
 
-    if (matchSymbol === "7️⃣") {
-      multiplier = 8;
-      resultText += `**7️⃣ GREAT! 2 số 7!**\n`;
-    } else if (matchSymbol === "⭐") {
-      multiplier = 5;
-      resultText += `**⭐ WIN! 2 sao!**\n`;
-    } else if (matchSymbol === "💎") {
-      multiplier = 4;
-      resultText += `**💎 WIN! 2 kim cương!**\n`;
-    } else {
-      multiplier = 3;
-      resultText += `**WIN! 2 giống nhau!**\n`;
-    }
-  } else if (slot1 === "💎" || slot2 === "💎" || slot3 === "💎") {
-    multiplier = 2;
-    resultText += `**Lucky! Có kim cương!**\n`;
-  } else if (slot1 === "⭐" || slot2 === "⭐" || slot3 === "⭐") {
-    multiplier = 1.5;
-    resultText += `**Bonus! Có sao!**\n`;
-  }
+        if (slot1 === slot2 && slot2 === slot3) {
+          // Giữ nguyên mức phần thưởng như cũ
+          if (slot1 === "7️⃣") {
+            multiplier = 50; // JACKPOT!
+            resultText += `**🎉 JACKPOT! 7-7-7!**\n`;
+          } else if (slot1 === "⭐") {
+            multiplier = 20;
+            resultText += `**⭐ SUPER WIN!**\n`;
+          } else if (slot1 === "💎") {
+            multiplier = 15;
+            resultText += `**💎 MEGA WIN!**\n`;
+          } else {
+            multiplier = 10;
+            resultText += `**🎊 BIG WIN! 3 giống nhau!**\n`;
+          }
+        } else if (slot1 === slot2 || slot2 === slot3 || slot1 === slot3) {
+          const matchSymbol =
+            slot1 === slot2 ? slot1 : slot2 === slot3 ? slot2 : slot1;
 
-  if (multiplier > 0) {
-    const winCalc = calculateWinAmount(betAmount, multiplier);
-    
-    if (!winCalc.success) {
-      return c.res({
-        content: winCalc.error + "\n⚠️ Vui lòng giảm số xu cược!",
-        flags: 64,
-      });
-    }
-    
-    winAmount = winCalc.amount!;
-    
-    const xuUpdate = updateUserXu(userData.xu, winAmount);
-    if (!xuUpdate.success) {
-      return c.res({
-        content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!",
-        flags: 64,
-      });
-    }
-    
-    userData.xu = xuUpdate.newXu!;
-    resultText += `**+${winAmount.toLocaleString()} xu** (x${multiplier})\n`;
-  } else {
-    // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
-    const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
-    userData.xu = lossUpdate.newXu;
-    
-    if (lossUpdate.actualLoss < betAmount) {
-      resultText += `**THUA!** -${lossUpdate.actualLoss.toLocaleString()} xu (Hết xu!)\n`;
-    } else {
-      resultText += `**THUA!** -${betAmount.toLocaleString()} xu\n`;
-    }
-  }
+          if (matchSymbol === "7️⃣") {
+            multiplier = 8;
+            resultText += `**7️⃣ GREAT! 2 số 7!**\n`;
+          } else if (matchSymbol === "⭐") {
+            multiplier = 5;
+            resultText += `**⭐ WIN! 2 sao!**\n`;
+          } else if (matchSymbol === "💎") {
+            multiplier = 4;
+            resultText += `**💎 WIN! 2 kim cương!**\n`;
+          } else {
+            multiplier = 3;
+            resultText += `**WIN! 2 giống nhau!**\n`;
+          }
+        } else if (slot1 === "💎" || slot2 === "💎" || slot3 === "💎") {
+          multiplier = 2;
+          resultText += `**Lucky! Có kim cương!**\n`;
+        } else if (slot1 === "⭐" || slot2 === "⭐" || slot3 === "⭐") {
+          multiplier = 1.5;
+          resultText += `**Bonus! Có sao!**\n`;
+        }
 
-  resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;
+        if (multiplier > 0) {
+          const winCalc = calculateWinAmount(betAmount, multiplier);
+          
+          if (!winCalc.success) {
+            await fetch(webhookUrl, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: winCalc.error + "\n⚠️ Vui lòng giảm số xu cược!" }),
+            });
+            return;
+          }
+          
+          winAmount = winCalc.amount!;
+          
+          const xuUpdate = updateUserXu(userData.xu, winAmount);
+          if (!xuUpdate.success) {
+            await fetch(webhookUrl, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!" }),
+            });
+            return;
+          }
+          
+          userData.xu = xuUpdate.newXu!;
+          resultText += `**+${winAmount.toLocaleString()} xu** (x${multiplier})\n`;
+        } else {
+          // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
+          const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
+          userData.xu = lossUpdate.newXu;
+          
+          if (lossUpdate.actualLoss < betAmount) {
+            resultText += `**THUA!** -${lossUpdate.actualLoss.toLocaleString()} xu (Hết xu!)\n`;
+          } else {
+            resultText += `**THUA!** -${betAmount.toLocaleString()} xu\n`;
+          }
+        }
 
-  // Update username and leaderboard
-  const username =
-    c.interaction.member?.user.username ||
-    c.interaction.user?.username ||
-    "Unknown";
-  userData.username = username;
-  await saveUserData(userId, userData, db);
-  await updateLeaderboard(userId, username, userData.xu, db);
+        resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;
 
-  await sendCommandLog(c.env, username, userId, "/slot", resultText);
-  return c.res({ content: resultText });
+        // Update username and leaderboard
+        userData.username = username;
+        await saveUserData(userId, userData, db);
+        await updateLeaderboard(userId, username, userData.xu, db);
+
+        await sendCommandLog(c.env, username, userId, "/slot", resultText);
+        
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: resultText }),
+        });
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi chơi slot!" }),
+        });
+      }
+    })()
+  );
+
+  return new Response(
+    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    { headers: { "Content-Type": "application/json" } }
+  );
 }

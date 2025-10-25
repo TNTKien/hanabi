@@ -166,8 +166,7 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
   if (!userId) return c.res("Không thể xác định người dùng!");
 
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-  const db = initDB(c.env.DB);
-
+  
   // @ts-ignore - get game option
   const game = c.get("game") as string;
   
@@ -179,6 +178,9 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
   }
 
   const cost = GACHA_COSTS[game];
+  
+  // Quick check before defer
+  const db = initDB(c.env.DB);
   const userData = await getUserData(userId, db);
 
   // Check if user has enough xu
@@ -189,47 +191,73 @@ export async function gachaCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  // Get current banner
-  const bannerCharacter = await getBannerCharacter(db, game);
+  // Defer response
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
-  // Perform 10-pull
-  const results = performTenPull(bannerCharacter);
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        // Get current banner
+        const bannerCharacter = await getBannerCharacter(db, game);
 
-  // Deduct xu
-  userData.xu -= cost;
+        // Perform 10-pull
+        const results = performTenPull(bannerCharacter);
 
-  // Update collection
-  if (!userData.gachaCollection) {
-    userData.gachaCollection = {};
-  }
-  if (!userData.gachaCollection[game]) {
-    userData.gachaCollection[game] = {};
-  }
+        // Deduct xu
+        userData.xu -= cost;
 
-  results.forEach(char => {
-    const charId = char.id.toString();
-    userData.gachaCollection![game][charId] = (userData.gachaCollection![game][charId] || 0) + 1;
-  });
+        // Update collection
+        if (!userData.gachaCollection) {
+          userData.gachaCollection = {};
+        }
+        if (!userData.gachaCollection[game]) {
+          userData.gachaCollection[game] = {};
+        }
 
-  await saveUserData(userId, userData, db);
-  await updateLeaderboard(userId, username, userData.xu, db);
+        results.forEach(char => {
+          const charId = char.id.toString();
+          userData.gachaCollection![game][charId] = (userData.gachaCollection![game][charId] || 0) + 1;
+        });
 
-  // Format output
-  let output = `🎰 **Blue Archive Gacha** 🎰\n\n`;
-  
-  if (bannerCharacter) {
-    output += `⭐ **Rate-Up:** ${bannerCharacter.name} (x2 chance!)\n\n`;
-  }
-  
-  output += formatResults(results, bannerCharacter);
-  output += `\n💰 Xu còn lại: **${userData.xu} xu**`;
+        await saveUserData(userId, userData, db);
+        await updateLeaderboard(userId, username, userData.xu, db);
 
-  // Check for SSR
-  const ssrCount = results.filter(c => c.rarity === "SSR").length;
-  if (ssrCount > 0) {
-    output += `\n\n🎉 **CHÚC MỪNG! Bạn đã có ${ssrCount} SSR!** 🎉`;
-  }
+        // Format output
+        let output = `🎰 **Blue Archive Gacha** 🎰\n\n`;
+        
+        if (bannerCharacter) {
+          output += `⭐ **Rate-Up:** ${bannerCharacter.name} (x2 chance!)\n\n`;
+        }
+        
+        output += formatResults(results, bannerCharacter);
+        output += `\n💰 Xu còn lại: **${userData.xu} xu**`;
 
-  await sendCommandLog(c.env, username, userId, `/gacha ${game}`, `ssr=${ssrCount}; balance=${userData.xu}`);
-  return c.res({ content: output });
+        // Check for SSR
+        const ssrCount = results.filter(c => c.rarity === "SSR").length;
+        if (ssrCount > 0) {
+          output += `\n\n🎉 **CHÚC MỪNG! Bạn đã có ${ssrCount} SSR!** 🎉`;
+        }
+
+        await sendCommandLog(c.env, username, userId, `/gacha ${game}`, `ssr=${ssrCount}; balance=${userData.xu}`);
+
+        // Update deferred message
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: output }),
+        });
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi gacha!" }),
+        });
+      }
+    })()
+  );
+
+  return new Response(
+    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    { headers: { "Content-Type": "application/json" } }
+  );
 }

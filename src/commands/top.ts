@@ -8,48 +8,73 @@ export async function topCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-  await sendCommandLog(c.env, username, userId, "/top", "invoked");
   
-  const db = initDB(c.env.DB);
-  const topUsers = await getTopUsers(db, 10);
+  // Defer response
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
-  if (topUsers.length === 0) {
-    return c.res({
-      content: "Chưa có dữ liệu người chơi!",
-      flags: 64,
-    });
-  }
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        await sendCommandLog(c.env, username, userId, "/top", "invoked");
+        
+        const db = initDB(c.env.DB);
+        const topUsers = await getTopUsers(db, 10);
 
-  let leaderboardText = `🏆 BẢNG XẾP HẠNG TOP 10\n\n`;
+        if (topUsers.length === 0) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: "Chưa có dữ liệu người chơi!" }),
+          });
+          return;
+        }
 
-  topUsers.forEach((user, index) => {
-    const medal =
-      index === 0
-        ? "🥇"
-        : index === 1
-        ? "🥈"
-        : index === 2
-        ? "🥉"
-        : `${index + 1}.`;
-    leaderboardText += `${medal} **${
-      user.username
-    }** - ${user.xu.toLocaleString()} xu\n`;
-  });
+        let leaderboardText = `🏆 BẢNG XẾP HẠNG TOP 10\n\n`;
 
-  if (userId) {
-    const allUsers = await getTopUsers(db, 1000);
-    const userRank = allUsers.findIndex((u) => u.userId === userId);
+        topUsers.forEach((user, index) => {
+          const medal =
+            index === 0
+              ? "🥇"
+              : index === 1
+              ? "🥈"
+              : index === 2
+              ? "🥉"
+              : `${index + 1}.`;
+          leaderboardText += `${medal} **${
+            user.username
+          }** - ${user.xu.toLocaleString()} xu\n`;
+        });
 
-    if (userRank >= 10) {
-      const userData = await getUserData(userId, db);
-      leaderboardText += `\n━━━━━━━━━━━━━━━\n`;
-      leaderboardText += `**Bạn:** #${
-        userRank + 1
-      } - ${userData.xu.toLocaleString()} xu`;
-    }
-  }
+        if (userId) {
+          const allUsers = await getTopUsers(db, 1000);
+          const userRank = allUsers.findIndex((u) => u.userId === userId);
 
-  return c.res({
-    content: leaderboardText,
-  });
+          if (userRank >= 10) {
+            const userData = await getUserData(userId, db);
+            leaderboardText += `\n━━━━━━━━━━━━━━━\n`;
+            leaderboardText += `**Bạn:** #${
+              userRank + 1
+            } - ${userData.xu.toLocaleString()} xu`;
+          }
+        }
+
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: leaderboardText }),
+        });
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi tải bảng xếp hạng!" }),
+        });
+      }
+    })()
+  );
+
+  return new Response(
+    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    { headers: { "Content-Type": "application/json" } }
+  );
 }

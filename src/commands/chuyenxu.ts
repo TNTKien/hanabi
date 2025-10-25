@@ -39,6 +39,7 @@ export async function chuyenxuCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  // Quick validation before defer
   const db = initDB(c.env.DB);
   const senderData = await getUserData(userId, db);
 
@@ -51,62 +52,90 @@ export async function chuyenxuCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  // Get target user data
-  const targetData = await getUserData(targetUserId, db);
+  // Defer response
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
-  // Deduct from sender
-  const senderUpdate = updateUserXu(senderData.xu, -amount);
-  if (!senderUpdate.success) {
-    return c.res({
-      content: senderUpdate.error,
-      flags: 64,
-    });
-  }
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        // Get target user data
+        const targetData = await getUserData(targetUserId, db);
 
-  // Add to target
-  const targetUpdate = updateUserXu(targetData.xu, amount);
-  if (!targetUpdate.success) {
-    return c.res({
-      content: "❌ Người nhận đã đạt giới hạn xu tối đa!",
-      flags: 64,
-    });
-  }
+        // Deduct from sender
+        const senderUpdate = updateUserXu(senderData.xu, -amount);
+        if (!senderUpdate.success) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: senderUpdate.error }),
+          });
+          return;
+        }
 
-  // Update both users
-  senderData.xu = senderUpdate.newXu!;
-  targetData.xu = targetUpdate.newXu!;
+        // Add to target
+        const targetUpdate = updateUserXu(targetData.xu, amount);
+        if (!targetUpdate.success) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: "❌ Người nhận đã đạt giới hạn xu tối đa!" }),
+          });
+          return;
+        }
 
-  const senderUsername =
-    c.interaction.member?.user.username ||
-    c.interaction.user?.username ||
-    "Unknown";
-  senderData.username = senderUsername;
+        // Update both users
+        senderData.xu = senderUpdate.newXu!;
+        targetData.xu = targetUpdate.newXu!;
 
-  // Get target username - will be "Unknown" if not available
-  // @ts-ignore - Discord interaction data structure
-  const targetUser = c.interaction.data?.resolved?.users?.[targetUserId];
-  const targetUsername = targetUser?.username || `User-${targetUserId.slice(-4)}`;
-  targetData.username = targetUsername;
+        const senderUsername =
+          c.interaction.member?.user.username ||
+          c.interaction.user?.username ||
+          "Unknown";
+        senderData.username = senderUsername;
 
-  await saveUserData(userId, senderData, db);
-  await saveUserData(targetUserId, targetData, db);
-  
-  await updateLeaderboard(userId, senderUsername, senderData.xu, db);
-  await updateLeaderboard(targetUserId, targetUsername, targetData.xu, db);
+        // Get target username - will be "Unknown" if not available
+        // @ts-ignore - Discord interaction data structure
+        const targetUser = c.interaction.data?.resolved?.users?.[targetUserId];
+        const targetUsername = targetUser?.username || `User-${targetUserId.slice(-4)}`;
+        targetData.username = targetUsername;
 
-  const resultText = `💸 **Chuyển xu thành công!**\n\n` +
-    `Từ: **${senderUsername}**\n` +
-    `Đến: **${targetUsername}**\n` +
-    `Số xu: **${amount.toLocaleString()} xu**\n\n` +
-    `💰 Xu còn lại của bạn: **${senderData.xu.toLocaleString()} xu**`;
+        await saveUserData(userId, senderData, db);
+        await saveUserData(targetUserId, targetData, db);
+        
+        await updateLeaderboard(userId, senderUsername, senderData.xu, db);
+        await updateLeaderboard(targetUserId, targetUsername, targetData.xu, db);
 
-  await sendCommandLog(
-    c.env,
-    senderUsername,
-    userId,
-    `/chuyenxu @${targetUsername} ${amount}`,
-    `transferred ${amount} xu to ${targetUsername} (${targetUserId})`
+        const resultText = `💸 **Chuyển xu thành công!**\n\n` +
+          `Từ: **${senderUsername}**\n` +
+          `Đến: **${targetUsername}**\n` +
+          `Số xu: **${amount.toLocaleString()} xu**\n\n` +
+          `💰 Xu còn lại của bạn: **${senderData.xu.toLocaleString()} xu**`;
+
+        await sendCommandLog(
+          c.env,
+          senderUsername,
+          userId,
+          `/chuyenxu @${targetUsername} ${amount}`,
+          `transferred ${amount} xu to ${targetUsername} (${targetUserId})`
+        );
+
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: resultText }),
+        });
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi chuyển xu!" }),
+        });
+      }
+    })()
   );
 
-  return c.res({ content: resultText });
+  return new Response(
+    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    { headers: { "Content-Type": "application/json" } }
+  );
 }

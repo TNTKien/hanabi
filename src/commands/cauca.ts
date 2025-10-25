@@ -56,9 +56,9 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
+  // Quick check before defer
   const db = initDB(c.env.DB);
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-
   const userData = await getUserData(userId, db);
   const now = Date.now();
 
@@ -72,52 +72,79 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  // Select random fish
-  const caught = selectFish();
-  const rarityEmoji = getRarityColor(caught.rarity);
+  // Defer response
+  const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
-  // Initialize fish collection if doesn't exist
-  if (!userData.fishCollection) {
-    userData.fishCollection = {};
-  }
-  
-  // Track caught fish
-  if (!userData.fishCollection[caught.name]) {
-    userData.fishCollection[caught.name] = 0;
-  }
-  userData.fishCollection[caught.name]++;
+  c.executionCtx.waitUntil(
+    (async () => {
+      try {
+        // Select random fish
+        const caught = selectFish();
+        const rarityEmoji = getRarityColor(caught.rarity);
 
-  // Update user data with safety check
-  const xuUpdate = updateUserXu(userData.xu, caught.xu);
-  if (!xuUpdate.success) {
-    return c.res({
-      content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!",
-      flags: 64,
-    });
-  }
-  
-  userData.xu = xuUpdate.newXu!;
-  userData.lastFish = now;
+        // Initialize fish collection if doesn't exist
+        if (!userData.fishCollection) {
+          userData.fishCollection = {};
+        }
+        
+        // Track caught fish
+        if (!userData.fishCollection[caught.name]) {
+          userData.fishCollection[caught.name] = 0;
+        }
+        userData.fishCollection[caught.name]++;
 
-  await saveUserData(userId, userData, db);
-  await updateLeaderboard(userId, username, userData.xu, db);
+        // Update user data with safety check
+        const xuUpdate = updateUserXu(userData.xu, caught.xu);
+        if (!xuUpdate.success) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!" }),
+          });
+          return;
+        }
+        
+        userData.xu = xuUpdate.newXu!;
+        userData.lastFish = now;
 
-  // Count total unique fish
-  const uniqueFish = Object.keys(userData.fishCollection).length;
-  const totalFish = Object.values(userData.fishCollection).reduce((a, b) => a + b, 0);
+        await saveUserData(userId, userData, db);
+        await updateLeaderboard(userId, username, userData.xu, db);
 
-  let resultMessage = `🎣 **Câu Cá**\n\n`;
-  resultMessage += `${rarityEmoji} Bạn câu được: **${caught.name}**\n`;
-  resultMessage += `✨ Độ hiếm: **${caught.rarity}**\n`;
-  resultMessage += `💰 Nhận được: **+${caught.xu.toLocaleString()} xu**\n\n`;
-  resultMessage += `💵 Số xu hiện tại: **${userData.xu.toLocaleString()} xu**\n`;
-  resultMessage += `📊 Bộ sưu tập: **${uniqueFish}/${FISH_TYPES.length}** loài (${totalFish} con)`;
+        // Count total unique fish
+        const uniqueFish = Object.keys(userData.fishCollection).length;
+        const totalFish = Object.values(userData.fishCollection).reduce((a, b) => a + b, 0);
 
-  // Special message for legendary catch
-  if (caught.rarity === "Legendary") {
-    resultMessage += `\n\n🎉 **CHÚC MỪNG! Bạn đã câu được cá huyền thoại!** 🎉`;
-  }
+        let resultMessage = `🎣 **Câu Cá**\n\n`;
+        resultMessage += `${rarityEmoji} Bạn câu được: **${caught.name}**\n`;
+        resultMessage += `✨ Độ hiếm: **${caught.rarity}**\n`;
+        resultMessage += `💰 Nhận được: **+${caught.xu.toLocaleString()} xu**\n\n`;
+        resultMessage += `💵 Số xu hiện tại: **${userData.xu.toLocaleString()} xu**\n`;
+        resultMessage += `📊 Bộ sưu tập: **${uniqueFish}/${FISH_TYPES.length}** loài (${totalFish} con)`;
 
-  await sendCommandLog(c.env, username, userId, "/cauca", `${caught.name} (${caught.rarity}) +${caught.xu} xu`);
-  return c.res({ content: resultMessage });
+        // Special message for legendary catch
+        if (caught.rarity === "Legendary") {
+          resultMessage += `\n\n🎉 **CHÚC MỪNG! Bạn đã câu được cá huyền thoại!** 🎉`;
+        }
+
+        await sendCommandLog(c.env, username, userId, "/cauca", `${caught.name} (${caught.rarity}) +${caught.xu} xu`);
+        
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: resultMessage }),
+        });
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi câu cá!" }),
+        });
+      }
+    })()
+  );
+
+  return new Response(
+    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
+    { headers: { "Content-Type": "application/json" } }
+  );
 }
