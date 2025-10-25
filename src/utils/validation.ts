@@ -8,8 +8,8 @@ export const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
 // Giới hạn cược tối đa: 100 triệu xu (để tránh overflow khi nhân với multiplier lớn)
 export const MAX_BET_AMOUNT = 100_000_000;
 
-// Giới hạn xu tối đa trong tài khoản: 1 tỷ xu (để tránh số quá lớn)
-export const MAX_XU_AMOUNT = 1_000_000_000;
+// Giới hạn xu tối đa trong tài khoản: 5 tỷ xu (để tránh số quá lớn)
+export const MAX_XU_AMOUNT = 5_000_000_000;
 
 // Cược tối thiểu mặc định
 export const MIN_BET_AMOUNT = 1;
