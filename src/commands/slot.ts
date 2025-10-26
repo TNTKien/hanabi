@@ -22,7 +22,6 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
   const db = initDB(c.env.DB);
   const userData = await getUserData(userId, db);
 
-  // Validate bet amount với mức tối thiểu 100 xu cho slot
   const validation = validateBetAmount(betAmount, userData.xu, 1000);
   if (!validation.valid) {
     return c.res({
@@ -31,17 +30,31 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  // Defer response
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
-  const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
+  const username =
+    c.interaction.member?.user.username ||
+    c.interaction.user?.username ||
+    "Unknown";
 
   c.executionCtx.waitUntil(
     (async () => {
       try {
-        // Thêm nhiều symbol hơn để tăng độ khó
-        const symbols = ["🍒", "🍋", "🍊", "🍇", "🍉", "🍓", "🍌", "💎", "⭐", "7️⃣"];
-        // Giảm mạnh tỷ lệ xuất hiện kim cương và sao, thêm symbols thường
-        const weights = [18, 16, 15, 14, 13, 12, 10, 1, 0.5, 0.5];
+        const symbols = [
+          "🍒",
+          "🍋",
+          "🍊",
+          "🍇",
+          "🍉",
+          "🍓",
+          "🍌",
+          "🍎",
+          "🥝",
+          "🍑",
+          "💎",
+          "⭐",
+          "7️⃣",
+        ];
+        const weights = [20, 18, 17, 16, 15, 14, 13, 12, 11, 10, 0.5, 0.3, 0.2];
 
         const rollSymbol = () => {
           const total = weights.reduce((a, b) => a + b, 0);
@@ -65,18 +78,17 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
         let multiplier = 0;
 
         if (slot1 === slot2 && slot2 === slot3) {
-          // Giữ nguyên mức phần thưởng như cũ
           if (slot1 === "7️⃣") {
-            multiplier = 50; // JACKPOT!
+            multiplier = 40;
             resultText += `**🎉 JACKPOT! 7-7-7!**\n`;
           } else if (slot1 === "⭐") {
-            multiplier = 20;
+            multiplier = 15;
             resultText += `**⭐ SUPER WIN!**\n`;
           } else if (slot1 === "💎") {
-            multiplier = 15;
+            multiplier = 12;
             resultText += `**💎 MEGA WIN!**\n`;
           } else {
-            multiplier = 10;
+            multiplier = 8;
             resultText += `**🎊 BIG WIN! 3 giống nhau!**\n`;
           }
         } else if (slot1 === slot2 || slot2 === slot3 || slot1 === slot3) {
@@ -84,57 +96,51 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
             slot1 === slot2 ? slot1 : slot2 === slot3 ? slot2 : slot1;
 
           if (matchSymbol === "7️⃣") {
-            multiplier = 8;
+            multiplier = 6;
             resultText += `**7️⃣ GREAT! 2 số 7!**\n`;
           } else if (matchSymbol === "⭐") {
-            multiplier = 5;
+            multiplier = 4;
             resultText += `**⭐ WIN! 2 sao!**\n`;
           } else if (matchSymbol === "💎") {
-            multiplier = 4;
-            resultText += `**💎 WIN! 2 kim cương!**\n`;
-          } else {
             multiplier = 3;
-            resultText += `**WIN! 2 giống nhau!**\n`;
+            resultText += `**💎 WIN! 2 kim cương!**\n`;
           }
-        } else if (slot1 === "💎" || slot2 === "💎" || slot3 === "💎") {
-          multiplier = 2;
-          resultText += `**Lucky! Có kim cương!**\n`;
-        } else if (slot1 === "⭐" || slot2 === "⭐" || slot3 === "⭐") {
-          multiplier = 1.5;
-          resultText += `**Bonus! Có sao!**\n`;
         }
 
         if (multiplier > 0) {
           const winCalc = calculateWinAmount(betAmount, multiplier);
-          
+
           if (!winCalc.success) {
             await fetch(webhookUrl, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ content: winCalc.error + "\n⚠️ Vui lòng giảm số xu cược!" }),
+              body: JSON.stringify({
+                content: winCalc.error + "\n⚠️ Vui lòng giảm số xu cược!",
+              }),
             });
             return;
           }
-          
+
           winAmount = winCalc.amount!;
-          
+
           const xuUpdate = updateUserXu(userData.xu, winAmount);
           if (!xuUpdate.success) {
             await fetch(webhookUrl, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!" }),
+              body: JSON.stringify({
+                content: xuUpdate.error + "\n🎉 Bạn đã đạt giới hạn xu tối đa!",
+              }),
             });
             return;
           }
-          
+
           userData.xu = xuUpdate.newXu!;
           resultText += `**+${winAmount.toLocaleString()} xu** (x${multiplier})\n`;
         } else {
-          // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
           const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
           userData.xu = lossUpdate.newXu;
-          
+
           if (lossUpdate.actualLoss < betAmount) {
             resultText += `**THUA!** -${lossUpdate.actualLoss.toLocaleString()} xu (Hết xu!)\n`;
           } else {
@@ -144,13 +150,12 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
 
         resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;
 
-        // Update username and leaderboard
         userData.username = username;
         await saveUserData(userId, userData, db);
         await updateLeaderboard(userId, username, userData.xu, db);
 
         await sendCommandLog(c.env, username, userId, "/slot", resultText);
-        
+
         await fetch(webhookUrl, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -166,8 +171,7 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
     })()
   );
 
-  return new Response(
-    JSON.stringify({ type: 5 }), // DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE
-    { headers: { "Content-Type": "application/json" } }
-  );
+  return new Response(JSON.stringify({ type: 5 }), {
+    headers: { "Content-Type": "application/json" },
+  });
 }
