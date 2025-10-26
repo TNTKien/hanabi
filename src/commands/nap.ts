@@ -3,6 +3,7 @@ import type { Env } from "../types";
 import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
+import { updateUserXu, MAX_BET_AMOUNT } from "../utils/validation";
 
 export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -39,6 +40,14 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  // Validate amount to prevent overflow
+  if (amount > MAX_BET_AMOUNT) {
+    return c.res({
+      content: `❌ Số xu nạp tối đa là **${MAX_BET_AMOUNT.toLocaleString()} xu** để đảm bảo an toàn!`,
+      flags: 64,
+    });
+  }
+
   // Defer response
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
@@ -51,8 +60,17 @@ export async function napCommand(c: CommandContext<{ Bindings: Env }>) {
         const targetUserData = await getUserData(targetUserId, db);
         const oldBalance = targetUserData.xu;
 
-        // Add xu to target user
-        targetUserData.xu += amount;
+        // Add xu to target user with safety check
+        const xuUpdate = updateUserXu(targetUserData.xu, amount);
+        if (!xuUpdate.success) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: xuUpdate.error + "\n⚠️ Người nhận đã đạt giới hạn xu tối đa!" }),
+          });
+          return;
+        }
+        targetUserData.xu = xuUpdate.newXu!;
 
         // Get target username (use existing or default)
         const targetUsername = targetUserData.username || "Unknown User";

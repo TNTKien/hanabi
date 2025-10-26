@@ -56,7 +56,18 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
 
         if (isWin) {
           // House edge: Thắng chỉ nhận 95% tiền cược
-          const winAmount = Math.floor(betAmount * 0.95);
+          let winAmount = Math.floor(betAmount * 0.95);
+          
+          // Apply buff if active
+          let buffText = "";
+          if (userData.buffActive && userData.buffMultiplier) {
+            winAmount = Math.floor(winAmount * userData.buffMultiplier);
+            buffText = ` 🔥x${userData.buffMultiplier} buff!`;
+            // Consume buff after use
+            userData.buffActive = false;
+            userData.buffMultiplier = undefined;
+          }
+          
           const xuUpdate = updateUserXu(userData.xu, winAmount);
           if (!xuUpdate.success) {
             await fetch(webhookUrl, {
@@ -67,7 +78,7 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
             return;
           }
           userData.xu = xuUpdate.newXu!;
-          resultText += `**THẮNG!** +${winAmount.toLocaleString()} xu (x0.95)`;
+          resultText += `**THẮNG!** +${winAmount.toLocaleString()} xu (x0.95${buffText})`;
         } else {
           // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
           const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);

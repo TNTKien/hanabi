@@ -72,6 +72,10 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  // Set cooldown timestamp IMMEDIATELY to prevent race condition
+  userData.lastFish = now;
+  await saveUserData(userId, userData, db);
+
   // Defer response
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
@@ -105,7 +109,7 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
         }
         
         userData.xu = xuUpdate.newXu!;
-        userData.lastFish = now;
+        // lastFish already set before defer to prevent race condition
 
         await saveUserData(userId, userData, db);
         await updateLeaderboard(userId, username, userData.xu, db);

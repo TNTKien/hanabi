@@ -267,9 +267,18 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
             // Calculate reward based on position
             const chosenPosition = finishers.findIndex(u => u.id === chosenUma);
             
+            // Check if buff is active - will be consumed on ANY win
+            let buffText = "";
+            let buffMultiplier = 1;
+            if (userData.buffActive && userData.buffMultiplier) {
+              buffMultiplier = userData.buffMultiplier;
+              buffText = ` 🔥x${userData.buffMultiplier} buff!`;
+            }
+            
             if (chosenPosition === 0) {
               // 1st place: Full multiplier
-              const winCalc = calculateWinAmount(betAmount, chosenUmaInfo?.multiplier || 2);
+              const finalMultiplier = (chosenUmaInfo?.multiplier || 2) * buffMultiplier;
+              const winCalc = calculateWinAmount(betAmount, finalMultiplier);
               
               if (!winCalc.success) {
                 updateMsg += `⚠️ **Lỗi tính toán!** Số xu quá lớn!`;
@@ -282,13 +291,19 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
                   userData.xu = xuUpdate.newXu || userData.xu;
                 } else {
                   userData.xu = xuUpdate.newXu!;
-                  updateMsg += `🥇 **VỀ NHẤT!** +${winAmount.toLocaleString()} xu (x${chosenUmaInfo?.multiplier})`;
+                  updateMsg += `🥇 **VỀ NHẤT!** +${winAmount.toLocaleString()} xu (x${finalMultiplier}${buffText})`;
                 }
+              }
+              // Consume buff after winning
+              if (userData.buffActive) {
+                userData.buffActive = false;
+                userData.buffMultiplier = undefined;
               }
             } else if (chosenPosition === 1) {
               // 2nd place: 50% of multiplier
               const multiplier = (chosenUmaInfo?.multiplier || 2) * 0.5;
-              const winCalc = calculateWinAmount(betAmount, multiplier);
+              const finalMultiplier = multiplier * buffMultiplier;
+              const winCalc = calculateWinAmount(betAmount, finalMultiplier);
               
               if (!winCalc.success) {
                 updateMsg += `⚠️ **Lỗi tính toán!** Số xu quá lớn!`;
@@ -301,13 +316,19 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
                   updateMsg += `🥈 **VỀ NHÌ!** Nhưng đã đạt giới hạn xu!`;
                 } else {
                   userData.xu = xuUpdate.newXu!;
-                  updateMsg += `🥈 **VỀ NHÌ!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
+                  updateMsg += `🥈 **VỀ NHÌ!** +${winAmount.toLocaleString()} xu (x${finalMultiplier.toFixed(1)}${buffText})`;
                 }
+              }
+              // Consume buff after winning
+              if (userData.buffActive) {
+                userData.buffActive = false;
+                userData.buffMultiplier = undefined;
               }
             } else if (chosenPosition === 2) {
               // 3rd place: 25% of multiplier (minimum break even)
               const multiplier = Math.max(1, (chosenUmaInfo?.multiplier || 2) * 0.25);
-              const winCalc = calculateWinAmount(betAmount, multiplier);
+              const finalMultiplier = multiplier * buffMultiplier;
+              const winCalc = calculateWinAmount(betAmount, finalMultiplier);
               
               if (!winCalc.success) {
                 updateMsg += `⚠️ **Lỗi tính toán!** Số xu quá lớn!`;
@@ -320,8 +341,13 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
                   updateMsg += `🥉 **VỀ BA!** Nhưng đã đạt giới hạn xu!`;
                 } else {
                   userData.xu = xuUpdate.newXu!;
-                  updateMsg += `🥉 **VỀ BA!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
+                  updateMsg += `🥉 **VỀ BA!** +${winAmount.toLocaleString()} xu (x${finalMultiplier.toFixed(1)}${buffText})`;
                 }
+              }
+              // Consume buff after winning
+              if (userData.buffActive) {
+                userData.buffActive = false;
+                userData.buffMultiplier = undefined;
               }
             } else {
               // Not in top 3: Lose bet

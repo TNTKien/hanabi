@@ -26,6 +26,10 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  // Set cooldown timestamp IMMEDIATELY to prevent race condition
+  userData.lastLucky = now;
+  await saveUserData(userId, userData, db);
+
   // Defer response
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
@@ -35,7 +39,7 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
       try {
         const luckyAmount = Math.floor(Math.random() * 10001); // 0-10000
         userData.xu += luckyAmount;
-        userData.lastLucky = now;
+        // lastLucky already set before defer to prevent race condition
 
         // Update username and leaderboard
         userData.username = username;

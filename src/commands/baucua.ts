@@ -82,8 +82,19 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
           }
         } else {
           // House edge: Giảm multiplier xuống 0.9x cho mỗi match
-          const multiplier = matches * 0.9; // 0.9x, 1.8x, 2.7x thay vì 1x, 2x, 3x
-          const winCalc = calculateWinAmount(betAmount, multiplier);
+          let finalMultiplier = matches * 0.9; // 0.9x, 1.8x, 2.7x thay vì 1x, 2x, 3x
+          let buffText = "";
+          
+          // Apply buff if active
+          if (userData.buffActive && userData.buffMultiplier) {
+            finalMultiplier = finalMultiplier * userData.buffMultiplier;
+            buffText = ` 🔥x${userData.buffMultiplier} buff!`;
+            // Consume buff after use
+            userData.buffActive = false;
+            userData.buffMultiplier = undefined;
+          }
+          
+          const winCalc = calculateWinAmount(betAmount, finalMultiplier);
           
           if (!winCalc.success) {
             await fetch(webhookUrl, {
@@ -107,7 +118,7 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
           }
           
           userData.xu = xuUpdate.newXu!;
-          resultText += `**THẮNG ${matches}x!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
+          resultText += `**THẮNG ${matches}x!** +${winAmount.toLocaleString()} xu (x${finalMultiplier.toFixed(1)}${buffText})`;
         }
 
         resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;

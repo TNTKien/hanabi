@@ -108,7 +108,18 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
         }
 
         if (multiplier > 0) {
-          const winCalc = calculateWinAmount(betAmount, multiplier);
+          // Apply buff if active
+          let finalMultiplier = multiplier;
+          let buffText = "";
+          if (userData.buffActive && userData.buffMultiplier) {
+            finalMultiplier = multiplier * userData.buffMultiplier;
+            buffText = ` 🔥x${userData.buffMultiplier} buff!`;
+            // Consume buff after use
+            userData.buffActive = false;
+            userData.buffMultiplier = undefined;
+          }
+          
+          const winCalc = calculateWinAmount(betAmount, finalMultiplier);
 
           if (!winCalc.success) {
             await fetch(webhookUrl, {
@@ -136,7 +147,7 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
           }
 
           userData.xu = xuUpdate.newXu!;
-          resultText += `**+${winAmount.toLocaleString()} xu** (x${multiplier})\n`;
+          resultText += `**+${winAmount.toLocaleString()} xu** (x${finalMultiplier}${buffText})\n`;
         } else {
           const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);
           userData.xu = lossUpdate.newXu;

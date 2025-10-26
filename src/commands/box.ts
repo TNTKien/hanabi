@@ -28,6 +28,10 @@ export async function boxCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
+  // Set cooldown timestamp IMMEDIATELY to prevent race condition
+  userData.lastBox = now;
+  await saveUserData(userId, userData, kv);
+
   // Defer response
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
@@ -64,7 +68,7 @@ export async function boxCommand(c: CommandContext<{ Bindings: Env }>) {
 
         // Update user data
         userData.xu += xuChange;
-        userData.lastBox = now;
+        // lastBox already set before defer to prevent race condition
         if (specialBuff) {
           userData.buffActive = true;
           userData.buffMultiplier = 2;
