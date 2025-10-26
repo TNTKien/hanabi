@@ -22,26 +22,27 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  // Quick validation before defer
-  const db = initDB(c.env.DB);
-  const userData = await getUserData(userId, db);
-
-  // Validate bet amount
-  const validation = validateBetAmount(betAmount, userData.xu, 1);
-  if (!validation.valid) {
-    return c.res({
-      content: validation.error,
-      flags: 64,
-    });
-  }
-
-  // Defer response
+  // Defer response immediately
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
 
   c.executionCtx.waitUntil(
     (async () => {
       try {
+        // Validate INSIDE async function to prevent race condition
+        const db = initDB(c.env.DB);
+        const userData = await getUserData(userId, db);
+
+        // Validate bet amount
+        const validation = validateBetAmount(betAmount, userData.xu, 1);
+        if (!validation.valid) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: validation.error }),
+          });
+          return;
+        }
         const dice1 = rollDice();
         const dice2 = rollDice();
         const dice3 = rollDice();
@@ -56,7 +57,18 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
 
         if (isWin) {
           // House edge: Thắng chỉ nhận 95% tiền cược
-          const winAmount = Math.floor(betAmount * 0.95);
+          let winAmount = Math.floor(betAmount * 0.95);
+          
+          // Apply buff if active
+          let buffApplied = false;
+          if (userData.buffActive && userData.buffMultiplier) {
+            winAmount = Math.floor(winAmount * userData.buffMultiplier);
+            buffApplied = true;
+            // Reset buff after use
+            userData.buffActive = false;
+            userData.buffMultiplier = undefined;
+          }
+          
           const xuUpdate = updateUserXu(userData.xu, winAmount);
           if (!xuUpdate.success) {
             await fetch(webhookUrl, {
@@ -67,7 +79,7 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
             return;
           }
           userData.xu = xuUpdate.newXu!;
-          resultText += `**THẮNG!** +${winAmount.toLocaleString()} xu (x0.95)`;
+          resultText += `**THẮNG!** +${winAmount.toLocaleString()} xu (x0.95${buffApplied ? " 🔥x2 BUFF" : ""})`;
         } else {
           // Sử dụng updateUserXuOnLoss để xử lý trường hợp không đủ xu
           const lossUpdate = updateUserXuOnLoss(userData.xu, betAmount);

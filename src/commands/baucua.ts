@@ -22,26 +22,27 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
     });
   }
 
-  // Quick validation before defer
-  const db = initDB(c.env.DB);
-  const userData = await getUserData(userId, db);
-
-  // Validate bet amount
-  const validation = validateBetAmount(betAmount, userData.xu, 1);
-  if (!validation.valid) {
-    return c.res({
-      content: validation.error,
-      flags: 64,
-    });
-  }
-
-  // Defer response
+  // Defer response immediately
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
 
   c.executionCtx.waitUntil(
     (async () => {
       try {
+        // Validate INSIDE async function to prevent race condition
+        const db = initDB(c.env.DB);
+        const userData = await getUserData(userId, db);
+
+        // Validate bet amount
+        const validation = validateBetAmount(betAmount, userData.xu, 1);
+        if (!validation.valid) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: validation.error }),
+          });
+          return;
+        }
         const animals = ["cua", "tom", "ca", "nai", "bau", "ga"];
         const animalEmojis: Record<string, string> = {
           cua: "🦀",
@@ -94,7 +95,18 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
             return;
           }
           
-          const winAmount = winCalc.amount!;
+          let winAmount = winCalc.amount!;
+          
+          // Apply buff if active
+          let buffApplied = false;
+          if (userData.buffActive && userData.buffMultiplier) {
+            winAmount = Math.floor(winAmount * userData.buffMultiplier);
+            buffApplied = true;
+            // Reset buff after use
+            userData.buffActive = false;
+            userData.buffMultiplier = undefined;
+          }
+          
           const xuUpdate = updateUserXu(userData.xu, winAmount);
           
           if (!xuUpdate.success) {
@@ -107,7 +119,7 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
           }
           
           userData.xu = xuUpdate.newXu!;
-          resultText += `**THẮNG ${matches}x!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
+          resultText += `**THẮNG ${matches}x!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)}${buffApplied ? " 🔥x2 BUFF" : ""})`;
         }
 
         resultText += `\nTổng xu: **${userData.xu.toLocaleString()} xu**`;

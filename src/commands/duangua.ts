@@ -28,8 +28,6 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
-  const db = initDB(c.env.DB);
-
   // @ts-ignore
   const betAmount = parseInt(c.get("cuoc") as string);
   // @ts-ignore
@@ -41,101 +39,6 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
       flags: 64,
     });
   }
-
-  const userData = await getUserData(userId, db);
-
-  // Validate bet amount
-  const validation = validateBetAmount(betAmount, userData.xu, 1);
-  if (!validation.valid) {
-    return c.res({
-      content: validation.error,
-      flags: 64,
-    });
-  }
-
-  // Base uma data
-  const baseUmas = [
-    {
-      id: "special_week",
-      name: "Special Week",
-      emoji: "<:special_week:1426674463457673296>",
-    },
-    {
-      id: "tokai_teio",
-      name: "Tokai Teio",
-      emoji: "<:tokai_teio:1426674466456342710>",
-    },
-    {
-      id: "kitasan_black",
-      name: "Kitasan Black",
-      emoji: "<:kitasan_black:1426674457312759869>",
-    },
-    {
-      id: "oguri_cap",
-      name: "Oguri Cap",
-      emoji: "<:oguri_cap:1426674472265453829>",
-    },
-    {
-      id: "tamamo_cross",
-      name: "Tamamo Cross",
-      emoji: "<:tamamo_cross:1426674469543612596>",
-    },
-    {
-      id: "satono_diamond",
-      name: "Satono Diamond",
-      emoji: "<:satono_diamond:1426674460756545566>",
-    },
-    {
-      id: "gold_ship",
-      name: "Gold Ship",
-      emoji: "<:gold_ship:1426674449910071438>",
-    },
-    {
-      id: "haru_urara",
-      name: "Haru Urara",
-      emoji: "<:haru_urara:1426674452573323487>",
-    },
-  ];
-
-  // Randomize stats for each uma (total max 1200 points per stat)
-  const generateRandomStats = (): UmaStats => {
-    return {
-      speed: Math.floor(Math.random() * 801) + 400,      // 400-1200
-      stamina: Math.floor(Math.random() * 801) + 400,    // 400-1200
-      power: Math.floor(Math.random() * 801) + 400,      // 400-1200
-      guts: Math.floor(Math.random() * 801) + 400,       // 400-1200
-      wisdom: Math.floor(Math.random() * 801) + 400,     // 400-1200
-    };
-  };
-
-  const umas: UmaInfo[] = baseUmas.map((uma) => {
-    const stats = generateRandomStats();
-    
-    // Calculate total stats to determine multiplier
-    const totalStats = stats.speed + stats.stamina + stats.power + stats.guts + stats.wisdom;
-    const avgStat = totalStats / 5;
-    
-    // High stats -> low multiplier (easier to win)
-    // Low stats -> high multiplier (harder to win, bigger reward)
-    // avgStat: 400-1200 => multiplier: 6-2
-    const multiplier = Math.round((8 - (avgStat / 200)) * 10) / 10;
-
-    return {
-      ...uma,
-      stats,
-      multiplier: Math.max(2, Math.min(6, multiplier)),
-      position: 0,
-      currentStamina: stats.stamina, // Start with full stamina
-    };
-  });
-
-  const FINISH_LINE = 40;
-  const chosenUmaInfo = umas.find((u) => u.id === chosenUma);
-
-  // Helper function to format stats display
-  const formatStats = (stats: UmaStats) => {
-    return `🏃‍♀️${stats.speed} 💪${stats.stamina} ⚡${stats.power} 💃${stats.guts} 💡${stats.wisdom}`;
-  };
 
   // Create initial deferred response
   const interactionResponse = new Response(
@@ -149,24 +52,116 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
     }
   );
 
-  // Webhook URL to update message
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
-
-  // Run race in background (no await)
-  // Log invocation
-  (async () => {
-    try {
-      const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-      await sendCommandLog(c.env, username, userId, `/duangua ${chosenUma} ${betAmount}`, "started");
-    } catch (e) {
-      /* ignore */
-    }
-  })();
 
   c.executionCtx.waitUntil(
     (async () => {
-      // Initial message with stats
-      let initialMsg = `🏇 ĐUA NGỰA - BẮT ĐẦU!\n\n`;
+      try {
+        // Validate INSIDE async function to prevent race condition
+        const db = initDB(c.env.DB);
+        const userData = await getUserData(userId, db);
+
+        // Validate bet amount
+        const validation = validateBetAmount(betAmount, userData.xu, 1);
+        if (!validation.valid) {
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ content: validation.error }),
+          });
+          return;
+        }
+
+        // Base uma data
+        const baseUmas = [
+          {
+            id: "special_week",
+            name: "Special Week",
+            emoji: "<:special_week:1426674463457673296>",
+          },
+          {
+            id: "tokai_teio",
+            name: "Tokai Teio",
+            emoji: "<:tokai_teio:1426674466456342710>",
+          },
+          {
+            id: "kitasan_black",
+            name: "Kitasan Black",
+            emoji: "<:kitasan_black:1426674457312759869>",
+          },
+          {
+            id: "oguri_cap",
+            name: "Oguri Cap",
+            emoji: "<:oguri_cap:1426674472265453829>",
+          },
+          {
+            id: "tamamo_cross",
+            name: "Tamamo Cross",
+            emoji: "<:tamamo_cross:1426674469543612596>",
+          },
+          {
+            id: "satono_diamond",
+            name: "Satono Diamond",
+            emoji: "<:satono_diamond:1426674460756545566>",
+          },
+          {
+            id: "gold_ship",
+            name: "Gold Ship",
+            emoji: "<:gold_ship:1426674449910071438>",
+          },
+          {
+            id: "haru_urara",
+            name: "Haru Urara",
+            emoji: "<:haru_urara:1426674452573323487>",
+          },
+        ];
+
+        // Randomize stats for each uma (total max 1200 points per stat)
+        const generateRandomStats = (): UmaStats => {
+          return {
+            speed: Math.floor(Math.random() * 801) + 400,      // 400-1200
+            stamina: Math.floor(Math.random() * 801) + 400,    // 400-1200
+            power: Math.floor(Math.random() * 801) + 400,      // 400-1200
+            guts: Math.floor(Math.random() * 801) + 400,       // 400-1200
+            wisdom: Math.floor(Math.random() * 801) + 400,     // 400-1200
+          };
+        };
+
+        const umas: UmaInfo[] = baseUmas.map((uma) => {
+          const stats = generateRandomStats();
+          
+          // Calculate total stats to determine multiplier
+          const totalStats = stats.speed + stats.stamina + stats.power + stats.guts + stats.wisdom;
+          const avgStat = totalStats / 5;
+          
+          // High stats -> low multiplier (easier to win)
+          // Low stats -> high multiplier (harder to win, bigger reward)
+          // avgStat: 400-1200 => multiplier: 6-2
+          const multiplier = Math.round((8 - (avgStat / 200)) * 10) / 10;
+
+          return {
+            ...uma,
+            stats,
+            multiplier: Math.max(2, Math.min(6, multiplier)),
+            position: 0,
+            currentStamina: stats.stamina, // Start with full stamina
+          };
+        });
+
+        const FINISH_LINE = 40;
+        const chosenUmaInfo = umas.find((u) => u.id === chosenUma);
+
+        // Helper function to format stats display
+        const formatStats = (stats: UmaStats) => {
+          return `🏃‍♀️${stats.speed} 💪${stats.stamina} ⚡${stats.power} 💃${stats.guts} 💡${stats.wisdom}`;
+        };
+
+        // Log invocation
+        const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
+        await sendCommandLog(c.env, username, userId, `/duangua ${chosenUma} ${betAmount}`, "started");
+
+        // Initial message with stats
+        let initialMsg = `🏇 ĐUA NGỰA - BẮT ĐẦU!\n\n`;
       initialMsg += `Bạn chọn: ${chosenUmaInfo?.emoji} **${chosenUmaInfo?.name}**\n`;
       initialMsg += `Tỉ lệ cược: **x${chosenUmaInfo?.multiplier}**\n`;
       if (chosenUmaInfo) {
@@ -274,7 +269,18 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
               if (!winCalc.success) {
                 updateMsg += `⚠️ **Lỗi tính toán!** Số xu quá lớn!`;
               } else {
-                const winAmount = winCalc.amount!;
+                let winAmount = winCalc.amount!;
+                
+                // Apply buff if active
+                let buffApplied = false;
+                if (userData.buffActive && userData.buffMultiplier) {
+                  winAmount = Math.floor(winAmount * userData.buffMultiplier);
+                  buffApplied = true;
+                  // Reset buff after use
+                  userData.buffActive = false;
+                  userData.buffMultiplier = undefined;
+                }
+                
                 const xuUpdate = updateUserXu(userData.xu, winAmount);
                 
                 if (!xuUpdate.success) {
@@ -282,7 +288,7 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
                   userData.xu = xuUpdate.newXu || userData.xu;
                 } else {
                   userData.xu = xuUpdate.newXu!;
-                  updateMsg += `🥇 **VỀ NHẤT!** +${winAmount.toLocaleString()} xu (x${chosenUmaInfo?.multiplier})`;
+                  updateMsg += `🥇 **VỀ NHẤT!** +${winAmount.toLocaleString()} xu (x${chosenUmaInfo?.multiplier}${buffApplied ? " 🔥x2 BUFF" : ""})`;
                 }
               }
             } else if (chosenPosition === 1) {
@@ -293,7 +299,18 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
               if (!winCalc.success) {
                 updateMsg += `⚠️ **Lỗi tính toán!** Số xu quá lớn!`;
               } else {
-                const winAmount = winCalc.amount!;
+                let winAmount = winCalc.amount!;
+                
+                // Apply buff if active
+                let buffApplied = false;
+                if (userData.buffActive && userData.buffMultiplier) {
+                  winAmount = Math.floor(winAmount * userData.buffMultiplier);
+                  buffApplied = true;
+                  // Reset buff after use
+                  userData.buffActive = false;
+                  userData.buffMultiplier = undefined;
+                }
+                
                 const xuUpdate = updateUserXu(userData.xu, winAmount);
                 
                 if (!xuUpdate.success) {
@@ -301,7 +318,7 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
                   updateMsg += `🥈 **VỀ NHÌ!** Nhưng đã đạt giới hạn xu!`;
                 } else {
                   userData.xu = xuUpdate.newXu!;
-                  updateMsg += `🥈 **VỀ NHÌ!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
+                  updateMsg += `🥈 **VỀ NHÌ!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)}${buffApplied ? " 🔥x2 BUFF" : ""})`;
                 }
               }
             } else if (chosenPosition === 2) {
@@ -312,7 +329,18 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
               if (!winCalc.success) {
                 updateMsg += `⚠️ **Lỗi tính toán!** Số xu quá lớn!`;
               } else {
-                const winAmount = winCalc.amount!;
+                let winAmount = winCalc.amount!;
+                
+                // Apply buff if active
+                let buffApplied = false;
+                if (userData.buffActive && userData.buffMultiplier) {
+                  winAmount = Math.floor(winAmount * userData.buffMultiplier);
+                  buffApplied = true;
+                  // Reset buff after use
+                  userData.buffActive = false;
+                  userData.buffMultiplier = undefined;
+                }
+                
                 const xuUpdate = updateUserXu(userData.xu, winAmount);
                 
                 if (!xuUpdate.success) {
@@ -320,7 +348,7 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
                   updateMsg += `🥉 **VỀ BA!** Nhưng đã đạt giới hạn xu!`;
                 } else {
                   userData.xu = xuUpdate.newXu!;
-                  updateMsg += `🥉 **VỀ BA!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)})`;
+                  updateMsg += `🥉 **VỀ BA!** +${winAmount.toLocaleString()} xu (x${multiplier.toFixed(1)}${buffApplied ? " 🔥x2 BUFF" : ""})`;
                 }
               }
             } else {
@@ -382,6 +410,13 @@ export async function duanguaCommand(c: CommandContext<{ Bindings: Env }>) {
           body: JSON.stringify({
             content: "Đã xảy ra lỗi trong cuộc đua!",
           }),
+        });
+      }
+      } catch (error) {
+        await fetch(webhookUrl, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content: "❌ Đã xảy ra lỗi khi đua ngựa!" }),
         });
       }
     })()
