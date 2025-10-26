@@ -3,7 +3,7 @@ import type { Env } from "../types";
 import { initDB, getUserData, saveUserData, updateLeaderboard, rollDice } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
-import { validateBetAmount, updateUserXu, updateUserXuOnLoss } from "../utils/validation";
+import { validateBetAmount, updateUserXu, updateUserXuOnLoss, applyAndConsumeBuff } from "../utils/validation";
 
 export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -56,17 +56,11 @@ export async function taixiuCommand(c: CommandContext<{ Bindings: Env }>) {
 
         if (isWin) {
           // House edge: Thắng chỉ nhận 95% tiền cược
-          let winAmount = Math.floor(betAmount * 0.95);
+          const baseWinAmount = Math.floor(betAmount * 0.95);
           
-          // Apply buff if active
-          let buffText = "";
-          if (userData.buffActive && userData.buffMultiplier) {
-            winAmount = Math.floor(winAmount * userData.buffMultiplier);
-            buffText = ` 🔥x${userData.buffMultiplier} buff!`;
-            // Consume buff after use
-            userData.buffActive = false;
-            userData.buffMultiplier = undefined;
-          }
+          // Apply buff if active and consume it
+          const { finalMultiplier, buffText } = applyAndConsumeBuff(userData, 1);
+          const winAmount = Math.floor(baseWinAmount * finalMultiplier);
           
           const xuUpdate = updateUserXu(userData.xu, winAmount);
           if (!xuUpdate.success) {

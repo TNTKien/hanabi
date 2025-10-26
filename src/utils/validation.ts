@@ -2,6 +2,8 @@
  * Validation utilities for game safety and number overflow prevention
  */
 
+import type { UserData } from "../types";
+
 // JavaScript's MAX_SAFE_INTEGER = 9,007,199,254,740,991
 export const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER;
 
@@ -216,4 +218,30 @@ export function updateUserXuOnLoss(
     newXu: 0,
     actualLoss: actualLoss,
   };
+}
+
+/**
+ * Apply and consume buff if active
+ * Returns the final multiplier and buff text to display
+ * Modifies userData to consume the buff
+ */
+export function applyAndConsumeBuff(
+  userData: UserData,
+  baseMultiplier: number
+): {
+  finalMultiplier: number;
+  buffText: string;
+} {
+  let finalMultiplier = baseMultiplier;
+  let buffText = "";
+  
+  if (userData.buffActive && userData.buffMultiplier) {
+    finalMultiplier = baseMultiplier * userData.buffMultiplier;
+    buffText = ` 🔥x${userData.buffMultiplier} buff!`;
+    // Consume buff after use
+    userData.buffActive = false;
+    userData.buffMultiplier = undefined;
+  }
+  
+  return { finalMultiplier, buffText };
 }

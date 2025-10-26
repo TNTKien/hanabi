@@ -8,6 +8,7 @@ import {
   calculateWinAmount,
   updateUserXu,
   updateUserXuOnLoss,
+  applyAndConsumeBuff,
 } from "../utils/validation";
 
 export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
@@ -108,16 +109,8 @@ export async function slotCommand(c: CommandContext<{ Bindings: Env }>) {
         }
 
         if (multiplier > 0) {
-          // Apply buff if active
-          let finalMultiplier = multiplier;
-          let buffText = "";
-          if (userData.buffActive && userData.buffMultiplier) {
-            finalMultiplier = multiplier * userData.buffMultiplier;
-            buffText = ` 🔥x${userData.buffMultiplier} buff!`;
-            // Consume buff after use
-            userData.buffActive = false;
-            userData.buffMultiplier = undefined;
-          }
+          // Apply buff if active and consume it
+          const { finalMultiplier, buffText } = applyAndConsumeBuff(userData, multiplier);
           
           const winCalc = calculateWinAmount(betAmount, finalMultiplier);
 

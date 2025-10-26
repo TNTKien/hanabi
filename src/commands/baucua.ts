@@ -3,7 +3,7 @@ import type { Env } from "../types";
 import { initDB, getUserData, saveUserData, updateLeaderboard } from "../db";
 import { isBlacklisted, blacklistedResponse } from "../utils/blacklist";
 import { sendCommandLog } from "../utils/logger";
-import { validateBetAmount, calculateWinAmount, updateUserXu, updateUserXuOnLoss } from "../utils/validation";
+import { validateBetAmount, calculateWinAmount, updateUserXu, updateUserXuOnLoss, applyAndConsumeBuff } from "../utils/validation";
 
 export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
   const userId = c.interaction.member?.user.id || c.interaction.user?.id;
@@ -82,17 +82,10 @@ export async function baucuaCommand(c: CommandContext<{ Bindings: Env }>) {
           }
         } else {
           // House edge: Giảm multiplier xuống 0.9x cho mỗi match
-          let finalMultiplier = matches * 0.9; // 0.9x, 1.8x, 2.7x thay vì 1x, 2x, 3x
-          let buffText = "";
+          const baseMultiplier = matches * 0.9; // 0.9x, 1.8x, 2.7x thay vì 1x, 2x, 3x
           
-          // Apply buff if active
-          if (userData.buffActive && userData.buffMultiplier) {
-            finalMultiplier = finalMultiplier * userData.buffMultiplier;
-            buffText = ` 🔥x${userData.buffMultiplier} buff!`;
-            // Consume buff after use
-            userData.buffActive = false;
-            userData.buffMultiplier = undefined;
-          }
+          // Apply buff if active and consume it
+          const { finalMultiplier, buffText } = applyAndConsumeBuff(userData, baseMultiplier);
           
           const winCalc = calculateWinAmount(betAmount, finalMultiplier);
           
