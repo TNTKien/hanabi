@@ -9,30 +9,34 @@ export async function luckyCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
-  // Quick check before defer
-  const db = initDB(c.env.DB);
-  const userData = await getUserData(userId, db);
-  const now = Date.now();
-  const oneDay = 24 * 60 * 60 * 1000;
-
-  if (userData.lastLucky && now - userData.lastLucky < oneDay) {
-    const timeLeft = oneDay - (now - userData.lastLucky);
-    const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
-    const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-
-    return c.res({
-      content: `Bạn đã nhận xu hôm nay rồi!\nThời gian còn lại: **${hoursLeft} giờ ${minutesLeft} phút**`,
-      flags: 64,
-    });
-  }
-
-  // Defer response
+  // Defer response immediately to prevent race condition
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
 
   c.executionCtx.waitUntil(
     (async () => {
       try {
+        // Check cooldown INSIDE async function to prevent race condition
+        const db = initDB(c.env.DB);
+        const userData = await getUserData(userId, db);
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+
+        if (userData.lastLucky && now - userData.lastLucky < oneDay) {
+          const timeLeft = oneDay - (now - userData.lastLucky);
+          const hoursLeft = Math.floor(timeLeft / (60 * 60 * 1000));
+          const minutesLeft = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              content: `Bạn đã nhận xu hôm nay rồi!\nThời gian còn lại: **${hoursLeft} giờ ${minutesLeft} phút**`
+            }),
+          });
+          return;
+        }
+
         const luckyAmount = Math.floor(Math.random() * 10001); // 0-10000
         userData.xu += luckyAmount;
         userData.lastLucky = now;

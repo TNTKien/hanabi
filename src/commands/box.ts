@@ -11,29 +11,34 @@ export async function boxCommand(c: CommandContext<{ Bindings: Env }>) {
 
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
   
-  // Quick check before defer
-  const kv = initDB(c.env.DB);
-  const userData = await getUserData(userId, kv);
-  const now = Date.now();
-
-  // Check cooldown (3 boxes per day = 8 hours cooldown)
-  const cooldownTime = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
-  if (userData.lastBox && now - userData.lastBox < cooldownTime) {
-    const timeLeft = cooldownTime - (now - userData.lastBox);
-    const hours = Math.floor(timeLeft / (60 * 60 * 1000));
-    const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
-    return c.res({
-      content: `⏰ Bạn đã mở hộp rồi! Quay lại sau **${hours}h ${minutes}m**`,
-      flags: 64,
-    });
-  }
-
-  // Defer response
+  // Defer response immediately to prevent race condition
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
   c.executionCtx.waitUntil(
     (async () => {
       try {
+        // Check cooldown INSIDE async function to prevent race condition
+        const kv = initDB(c.env.DB);
+        const userData = await getUserData(userId, kv);
+        const now = Date.now();
+
+        // Check cooldown (3 boxes per day = 8 hours cooldown)
+        const cooldownTime = 8 * 60 * 60 * 1000; // 8 hours in milliseconds
+        if (userData.lastBox && now - userData.lastBox < cooldownTime) {
+          const timeLeft = cooldownTime - (now - userData.lastBox);
+          const hours = Math.floor(timeLeft / (60 * 60 * 1000));
+          const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000));
+          
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              content: `⏰ Bạn đã mở hộp rồi! Quay lại sau **${hours}h ${minutes}m**`
+            }),
+          });
+          return;
+        }
+
         // Determine outcome
         const random = Math.random() * 100;
         let result: string;

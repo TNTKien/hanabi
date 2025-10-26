@@ -56,28 +56,34 @@ export async function caucaCommand(c: CommandContext<{ Bindings: Env }>) {
   if (isBlacklisted(userId)) return c.res(blacklistedResponse());
   if (!userId) return c.res("Không thể xác định người dùng!");
 
-  // Quick check before defer
-  const db = initDB(c.env.DB);
   const username = c.interaction.member?.user.username || c.interaction.user?.username || "Unknown";
-  const userData = await getUserData(userId, db);
-  const now = Date.now();
-
-  // Check cooldown (1 minute 30 seconds)
-  const cooldownTime = 90 * 1000; // 90 seconds in milliseconds
-  if (userData.lastFish && now - userData.lastFish < cooldownTime) {
-    const timeLeft = Math.ceil((cooldownTime - (now - userData.lastFish)) / 1000);
-    return c.res({
-      content: `🎣 Bạn vừa câu cá rồi! Đợi **${timeLeft}s** nữa nhé!`,
-      flags: 64,
-    });
-  }
-
-  // Defer response
+  
+  // Defer response immediately to prevent race condition
   const webhookUrl = `https://discord.com/api/v10/webhooks/${c.env.DISCORD_APPLICATION_ID}/${c.interaction.token}/messages/@original`;
 
   c.executionCtx.waitUntil(
     (async () => {
       try {
+        // Check cooldown INSIDE async function to prevent race condition
+        const db = initDB(c.env.DB);
+        const userData = await getUserData(userId, db);
+        const now = Date.now();
+
+        // Check cooldown (1 minute 30 seconds)
+        const cooldownTime = 90 * 1000; // 90 seconds in milliseconds
+        if (userData.lastFish && now - userData.lastFish < cooldownTime) {
+          const timeLeft = Math.ceil((cooldownTime - (now - userData.lastFish)) / 1000);
+          
+          await fetch(webhookUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              content: `🎣 Bạn vừa câu cá rồi! Đợi **${timeLeft}s** nữa nhé!`
+            }),
+          });
+          return;
+        }
+
         // Select random fish
         const caught = selectFish();
         const rarityEmoji = getRarityColor(caught.rarity);
