@@ -2,7 +2,7 @@
 
 A Discord bot for playing some games. 100% vibe coding.
 
-Got errors while playing? Kệ mẹ bạn or find me on discord.
+Got errors while playing? Find me on discord.
 
 ## BREAKING CHANGES 26/10/2025
 
